@@ -1,0 +1,9444 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+
+<meta name="viewport"
+      content="width=device-width,
+      initial-scale=1.0,
+      maximum-scale=1.0,
+      user-scalable=no">
+
+<title>WATER CLICKER</title>
+
+<style>
+
+*{
+    box-sizing:border-box;
+    -webkit-tap-highlight-color:transparent;
+}
+
+html,body{
+    margin:0;
+    width:100%;
+    min-height:100%;
+    font-family:Arial,"Noto Sans JP",sans-serif;
+    background:linear-gradient(#dff8ff,#b8edff);
+    color:#073b52;
+    overflow-x:hidden;
+}
+
+body{
+    touch-action:manipulation;
+}
+
+button,input{
+    font-family:inherit;
+}
+
+button{
+    -webkit-user-select:none;
+    user-select:none;
+    touch-action:manipulation;
+    cursor:pointer;
+    transition:transform .08s ease, filter .08s ease, box-shadow .08s ease;
+}
+
+/* 全ボタン共通：押した瞬間に沈む視覚フィードバック */
+button.button-pressed,
+button:active{
+    transform:translateY(3px) scale(.97) !important;
+    filter:brightness(.94);
+    box-shadow:0 1px 3px rgba(0,0,0,.16) !important;
+}
+
+@media (prefers-reduced-motion: reduce){
+    button{transition:none;}
+}
+
+.hidden{
+    display:none !important;
+}
+
+.screen{
+    width:100%;
+    min-height:100vh;
+    padding:20px 15px 100px;
+    position:relative;
+}
+
+.title{
+    text-align:center;
+    font-size:34px;
+    font-weight:1000;
+    margin:8px 0 18px;
+}
+
+.water-display{
+    width:min(100%,500px);
+    margin:0 auto 15px;
+    padding:12px;
+    background:white;
+    border:3px solid #249ed0;
+    border-radius:15px;
+    text-align:center;
+    font-size:21px;
+    font-weight:1000;
+    overflow-wrap:anywhere;
+    line-height:1.15;
+}
+
+#home{
+    min-height:100vh;
+    height:100dvh;
+    overflow:hidden;
+    touch-action:none;
+    overscroll-behavior:none;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    padding-top:25px;
+}
+
+.main-water{
+    text-align:center;
+    font-size:28px;
+    font-weight:1000;
+    margin-bottom:5px;
+    overflow-wrap:anywhere;
+    line-height:1.15;
+}
+
+.main-power{
+    text-align:center;
+    font-size:17px;
+    font-weight:900;
+    margin-bottom:25px;
+    overflow-wrap:anywhere;
+}
+
+.drop-area{
+    position:relative;
+    width:300px;
+    height:300px;
+    max-width:80vw;
+    max-height:80vw;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+}
+
+.drop-button{
+    position:relative;
+    width:240px;
+    height:240px;
+    max-width:75vw;
+    max-height:75vw;
+    border:0;
+    border-radius:50%;
+    background:transparent;
+    font-size:0;
+    line-height:1;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    user-select:none;
+    -webkit-user-select:none;
+    transition:transform .06s ease;
+    filter:var(--drop-glow,none);
+}
+
+/* UD寄りの水滴：尖った先端をCSSだけで真上に固定 */
+.drop-button::before{
+    content:"";
+    position:absolute;
+    left:50%;
+    top:50%;
+    width:150px;
+    height:176px;
+    background:linear-gradient(160deg,var(--drop-g1,#b8f3ff) 0%,var(--drop-g2,#69d8f2) 45%,var(--drop-g3,#2ab0d8) 78%,var(--drop-g4,#1595c3) 100%);
+    border:4px solid var(--drop-border,#168fbb);
+    border-radius:50% 50% 48% 48%;
+    clip-path:polygon(
+        50% 0%,
+        58% 12%,
+        72% 25%,
+        88% 45%,
+        96% 63%,
+        94% 77%,
+        86% 88%,
+        73% 96%,
+        58% 100%,
+        42% 100%,
+        27% 96%,
+        14% 88%,
+        6% 77%,
+        4% 63%,
+        12% 45%,
+        28% 25%,
+        42% 12%
+    );
+    transform:translate(-50%,-50%);
+    box-shadow:inset 7px 7px 0 rgba(255,255,255,.16),inset -8px -9px 0 rgba(0,92,135,.08);
+}
+
+/* ハイライトも上部中央に配置。左向きに見える回転は一切使用しない */
+.drop-button::after{
+    content:"";
+    position:absolute;
+    left:calc(50% - 34px);
+    top:calc(50% - 67px);
+    width:40px;
+    height:19px;
+    border-radius:50%;
+    background:var(--drop-hl,rgba(255,255,255,.68));
+    transform:none;
+    pointer-events:none;
+}
+
+.drop-button:active{
+    transform:scale(.94);
+}
+
+.drop-button:focus-visible::before{
+    outline:4px solid #073b52;
+    outline-offset:5px;
+}
+
+.drop-hit{
+    position:absolute;
+    inset:0;
+    border-radius:50%;
+    background:transparent;
+    border:0;
+    z-index:2;
+}
+
+.menu-buttons{
+    width:min(100%,500px);
+    display:flex;
+    gap:12px;
+    margin-top:20px;
+}
+
+.menu-button{
+    flex:1;
+    min-height:58px;
+    border:3px solid #249ed0;
+    border-radius:15px;
+    background:white;
+    color:#073b52;
+    font-size:19px;
+    font-weight:1000;
+    box-shadow:0 3px 10px rgba(0,0,0,.12);
+}
+
+.menu-button:active{
+    transform:scale(.97);
+}
+
+.menu-button:disabled,
+.rank-home-button:disabled{
+    background:#aaa;
+    border-color:#aaa;
+    color:#eee;
+    cursor:not-allowed;
+    opacity:1;
+}
+
+.card-area.hidden-card{display:none;}
+
+.slot-screen{padding-top:70px;}
+
+.quiz-question{
+    width:min(100%,500px);
+    margin:18px auto 10px;
+    padding:20px 12px;
+    background:white;
+    border:3px solid #249ed0;
+    border-radius:15px;
+    text-align:center;
+    font-size:38px;
+    font-weight:1000;
+    color:#073b52;
+}
+.quiz-timer{
+    text-align:center;
+    font-size:20px;
+    font-weight:1000;
+    margin:8px 0 18px;
+}
+#slotBet,
+#quizAnswer{
+    display:block;
+    width:100%;
+    height:52px;
+    padding:8px 12px;
+    border:3px solid #249ed0;
+    border-radius:14px;
+    background:white;
+    color:#073b52;
+    font-size:20px;
+    font-weight:900;
+    text-align:center;
+    outline:none;
+    box-sizing:border-box;
+}
+
+
+
+.slot-area{
+    width:min(100%,500px);
+    margin:20px auto;
+    display:flex;
+    justify-content:center;
+    gap:10px;
+}
+
+.slot-reel{
+    flex:1;
+    min-width:0;
+    height:110px;
+    border:4px solid #249ed0;
+    border-radius:18px;
+    background:white;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-size:48px;
+    font-weight:1000;
+    box-shadow:0 5px 15px rgba(0,0,0,.15);
+}
+
+.slot-drop{
+    width:42px;
+    height:42px;
+    border-radius:50% 50% 50% 0;
+    background:linear-gradient(145deg,#8fe8ff,#39bce8,#1597ca);
+    transform:rotate(-45deg);
+    display:block;
+}
+
+.slot-reel.spinning{animation:slotShake .08s linear infinite;}
+
+@keyframes slotShake{
+    0%,100%{transform:translateY(0)}
+    50%{transform:translateY(4px)}
+}
+
+.skip-button{
+    position:absolute;
+    right:0;
+    bottom:0;
+    min-width:90px;
+    min-height:42px;
+    border:3px solid #249ed0;
+    border-radius:12px;
+    background:white;
+    color:#073b52;
+    font-size:15px;
+    font-weight:1000;
+}
+
+.jackpot-confirm{animation:jackpotConfirm .75s ease-in-out infinite alternate;}
+
+@keyframes jackpotConfirm{
+    from{filter:brightness(1);transform:scale(1)}
+    to{filter:brightness(1.5);transform:scale(1.04)}
+}
+
+.debug-description{
+    margin-top:10px;
+    margin-bottom:4px;
+    font-size:14px;
+    font-weight:900;
+    line-height:1.4;
+    text-align:left;
+    color:#073b52;
+}
+
+
+/* =========================================
+   セーブコード
+========================================= */
+.save-code-area{
+    width:min(100%,500px);
+    margin:18px auto 12px;
+    padding:14px;
+    border:3px solid #249ed0;
+    border-radius:15px;
+    background:rgba(255,255,255,.92);
+    box-shadow:0 3px 10px rgba(0,0,0,.10);
+}
+.save-code-title{
+    font-size:18px;
+    font-weight:1000;
+    text-align:center;
+    margin-bottom:8px;
+}
+.save-code-description{
+    font-size:12px;
+    font-weight:800;
+    line-height:1.45;
+    text-align:center;
+    margin-bottom:10px;
+}
+.save-code-buttons{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:8px;
+}
+.save-code-button{
+    min-height:48px;
+    border:3px solid #249ed0;
+    border-radius:12px;
+    background:white;
+    color:#073b52;
+    font-size:14px;
+    font-weight:1000;
+}
+.save-code-textarea{
+    display:block;
+    width:100%;
+    min-height:100px;
+    margin-top:10px;
+    padding:10px;
+    border:3px solid #249ed0;
+    border-radius:12px;
+    background:#f8fdff;
+    color:#073b52;
+    font-family:monospace;
+    font-size:12px;
+    font-weight:800;
+    line-height:1.45;
+    resize:vertical;
+    overflow-wrap:anywhere;
+}
+.save-code-copy{
+    width:100%;
+    min-height:44px;
+    margin-top:8px;
+    border:3px solid #249ed0;
+    border-radius:12px;
+    background:#e9f9ff;
+    color:#073b52;
+    font-size:14px;
+    font-weight:1000;
+}
+.save-code-status{
+    min-height:20px;
+    margin-top:7px;
+    font-size:12px;
+    font-weight:900;
+    text-align:center;
+}
+@media(max-width:420px){
+    .save-code-buttons{grid-template-columns:1fr;}
+}
+
+.debug-reset-button{position:relative !important;z-index:30001 !important;pointer-events:auto !important;touch-action:manipulation !important;}
+.debug-field{
+    width:100%;
+    height:52px;
+    margin-top:8px;
+    padding:8px 12px;
+    border:3px solid #249ed0;
+    border-radius:14px;
+    background:white;
+    color:#073b52;
+    font-size:19px;
+    font-weight:900;
+    text-align:center;
+}
+
+.debug-hint{
+    margin-top:10px;
+    font-size:13px;
+    font-weight:800;
+    line-height:1.5;
+}
+.debug-section-title{
+    margin-top:18px;
+    padding-top:12px;
+    border-top:2px solid #b8dff0;
+    font-size:18px;
+    font-weight:1000;
+    text-align:center;
+    color:#073b52;
+}
+.debug-add-button{
+    width:100%;
+    min-height:52px;
+    margin-top:10px;
+    border:3px solid #249ed0;
+    border-radius:14px;
+    background:#e9f9ff;
+    color:#073b52;
+    font-size:18px;
+    font-weight:1000;
+}
+.debug-custom-list{
+    margin-top:10px;
+    padding:10px;
+    border-radius:12px;
+    background:#f4fbff;
+    font-size:13px;
+    font-weight:800;
+    line-height:1.5;
+    text-align:left;
+}
+.debug-custom-item{
+    padding:7px 0;
+    border-bottom:1px solid #c9e7f3;
+}
+.debug-custom-item:last-child{border-bottom:0;}
+
+.rank-home-button{
+    width:min(100%,500px);
+    min-height:58px;
+    margin-top:12px;
+    border:3px solid #249ed0;
+    border-radius:15px;
+    background:white;
+    color:#073b52;
+    font-size:19px;
+    font-weight:1000;
+    box-shadow:0 3px 10px rgba(0,0,0,.12);
+}
+
+.rank-home-button:active{
+    transform:scale(.97);
+}
+
+/* SHOP / RANK：ホームへ戻るボタンを画面左上に固定 */
+.shop-back-button,
+.rank-back-button{
+    position:fixed !important;
+    top:10px !important;
+    left:10px !important;
+    right:auto !important;
+    bottom:auto !important;
+    z-index:10000 !important;
+    width:180px !important;
+    min-height:48px !important;
+    margin:0 !important;
+    padding:8px 14px !important;
+    cursor:pointer;
+    box-sizing:border-box;
+}
+
+.back-button{
+    position:fixed;
+    top:10px;
+    left:10px;
+    z-index:10000;
+    width:80px;
+    height:40px;
+    padding:0;
+    border:3px solid #249ed0;
+    border-radius:12px;
+    background:white;
+    color:#073b52;
+    font-size:16px;
+    font-weight:900;
+    box-shadow:0 3px 10px rgba(0,0,0,.15);
+    display:none;
+}
+
+.back-button:active{
+    transform:scale(.95);
+}
+
+.card-open-button{
+    position:fixed;
+    top:10px;
+    left:98px;
+    z-index:10000;
+    width:80px;
+    height:40px;
+    padding:0;
+    border:3px solid #249ed0;
+    border-radius:12px;
+    background:white;
+    color:#073b52;
+    font-size:16px;
+    font-weight:900;
+    box-shadow:0 3px 10px rgba(0,0,0,.15);
+    display:none;
+}
+
+.card-open-button:active{
+    transform:scale(.95);
+}
+
+.card-open-button:disabled{
+    background:#aaa;
+    border-color:#888;
+    color:#eee;
+    cursor:not-allowed;
+    opacity:1;
+    box-shadow:none;
+}
+
+.gambling-nav{
+    position:fixed;
+    top:10px;
+    left:10px;
+    right:10px;
+    z-index:10000;
+    display:none;
+    grid-template-columns:repeat(4,1fr);
+    gap:6px;
+}
+
+.gamble-nav-button{
+    min-width:0;
+    height:40px;
+    padding:0 6px;
+    border:3px solid #249ed0;
+    border-radius:12px;
+    background:white;
+    color:#073b52;
+    font-size:15px;
+    font-weight:900;
+    box-shadow:0 3px 10px rgba(0,0,0,.15);
+}
+
+.gamble-nav-button:active{transform:scale(.96);}
+
+.gamble-nav-button:disabled{
+    background:#aaa;
+    border-color:#888;
+    color:#eee;
+    cursor:not-allowed;
+    opacity:1;
+    box-shadow:none;
+}
+
+.shop-list{
+    width:min(100%,600px);
+    margin:0 auto;
+    display:flex;
+    flex-direction:column;
+    gap:10px;
+}
+
+.shop-item{
+    width:100%;
+    padding:12px;
+    background:white;
+    border:3px solid #249ed0;
+    border-radius:15px;
+    display:flex;
+    align-items:center;
+    gap:10px;
+}
+
+.shop-item.unlocked{
+    border-color:#20ad63;
+}
+
+.shop-item.insufficient{
+    border-color:#aaa;
+}
+
+.shop-item.insufficient .shop-action{
+    background:#aaa;
+    color:#eee;
+    cursor:not-allowed;
+}
+
+.shop-info{
+    flex:1;
+    min-width:0;
+}
+
+.shop-name{
+    font-size:20px;
+    font-weight:1000;
+}
+
+.shop-detail{
+    margin-top:4px;
+    font-size:14px;
+    font-weight:700;
+    overflow-wrap:anywhere;
+}
+
+.shop-action{
+    width:105px;
+    min-height:45px;
+    border:0;
+    border-radius:12px;
+    background:#249ed0;
+    color:white;
+    font-size:15px;
+    font-weight:1000;
+}
+
+.shop-item.unlocked .shop-action{
+    background:#20ad63;
+}
+
+.shop-action:active{
+    transform:scale(.96);
+}
+
+.shop-action:disabled{
+    cursor:default;
+}
+
+/* ホーム：下段（RANK / SKIN）を横並びに */
+.menu-buttons + .menu-buttons{
+    margin-top:12px;
+}
+
+.menu-buttons .rank-home-button{
+    flex:1;
+    width:auto;
+    margin-top:0;
+}
+
+/* SKIN 画面 */
+.skin-preview{
+    position:relative;
+    flex:none;
+    width:46px;
+    height:54px;
+    box-sizing:border-box;
+    border:2px solid var(--sk-border,#168fbb);
+    background:linear-gradient(160deg,var(--sk-g1) 0%,var(--sk-g2) 45%,var(--sk-g3) 78%,var(--sk-g4) 100%);
+    clip-path:polygon(50% 0%,58% 12%,72% 25%,88% 45%,96% 63%,94% 77%,86% 88%,73% 96%,58% 100%,42% 100%,27% 96%,14% 88%,6% 77%,4% 63%,12% 45%,28% 25%,42% 12%);
+}
+
+.skin-preview.locked{
+    filter:grayscale(1);
+    opacity:.55;
+}
+
+/* 左上の「ホームに戻る」ボタンにタイトルが隠れないように */
+#skinScreen,
+#onlineScreen{
+    padding-top:68px;
+}
+
+/* オンラインランキング */
+.online-open-button{
+    display:block;
+    width:min(100%,500px);
+    min-height:54px;
+    margin:0 auto 15px;
+    border:3px solid #249ed0;
+    border-radius:15px;
+    background:white;
+    color:#073b52;
+    font-size:17px;
+    font-weight:1000;
+    box-shadow:0 3px 10px rgba(0,0,0,.12);
+}
+
+.online-card{
+    width:min(100%,600px);
+    margin:0 auto 12px;
+    padding:12px;
+    background:rgba(255,255,255,.92);
+    border:3px solid #249ed0;
+    border-radius:15px;
+}
+
+.online-score{
+    font-size:15px;
+    font-weight:900;
+    line-height:1.4;
+    overflow-wrap:anywhere;
+}
+
+.online-notice{
+    margin-top:4px;
+    font-size:13px;
+    font-weight:900;
+    color:#b52d2d;
+}
+
+.online-input{
+    display:block;
+    width:100%;
+    height:46px;
+    margin:10px 0;
+    padding:6px 12px;
+    border:3px solid #249ed0;
+    border-radius:12px;
+    background:white;
+    color:#073b52;
+    font-size:18px;
+    font-weight:900;
+    outline:none;
+}
+
+.online-buttons{
+    display:grid;
+    grid-template-columns:2fr 1fr;
+    gap:8px;
+}
+
+.online-button{
+    min-height:46px;
+    border:3px solid #249ed0;
+    border-radius:12px;
+    background:#249ed0;
+    color:white;
+    font-size:15px;
+    font-weight:1000;
+}
+
+.online-button.sub{
+    background:white;
+    color:#073b52;
+}
+
+.online-button:disabled{
+    background:#aaa;
+    border-color:#aaa;
+    color:#eee;
+    cursor:not-allowed;
+}
+
+.online-message{
+    width:min(100%,600px);
+    margin:0 auto 12px;
+    min-height:20px;
+    text-align:center;
+    font-size:14px;
+    font-weight:900;
+    overflow-wrap:anywhere;
+}
+
+.online-message.ok{color:#0f7a4a;}
+.online-message.err{color:#b52d2d;}
+
+.online-head{
+    width:min(100%,600px);
+    margin:0 auto 8px;
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    font-size:17px;
+    font-weight:1000;
+}
+
+.online-head .online-button{
+    min-height:36px;
+    padding:0 14px;
+}
+
+.online-row{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    padding:8px 10px;
+    background:white;
+    border:3px solid #249ed0;
+    border-radius:12px;
+}
+
+.online-row.me{
+    border-color:#f5b81f;
+    background:#fff9dc;
+}
+
+.online-pos{
+    flex:none;
+    width:46px;
+    text-align:center;
+    font-size:20px;
+    font-weight:1000;
+}
+
+.online-info{
+    flex:1;
+    min-width:0;
+}
+
+.online-name{
+    font-size:17px;
+    font-weight:1000;
+    overflow-wrap:anywhere;
+}
+
+.online-detail{
+    margin-top:2px;
+    font-size:13px;
+    font-weight:700;
+    overflow-wrap:anywhere;
+}
+
+.online-empty{
+    padding:16px;
+    text-align:center;
+    font-size:15px;
+    font-weight:900;
+}
+
+/* SHOP タブ（クリックアイテム / オートアイテム） */
+.shop-tabs{
+    width:min(100%,600px);
+    margin:0 auto 12px;
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:8px;
+}
+
+.shop-tab{
+    min-height:46px;
+    border:3px solid #249ed0;
+    border-radius:12px;
+    background:white;
+    color:#073b52;
+    font-size:15px;
+    font-weight:1000;
+}
+
+.shop-tab.active{
+    background:#249ed0;
+    color:white;
+}
+
+.auto-summary{
+    width:min(100%,600px);
+    margin:0 auto 12px;
+    padding:10px;
+    background:rgba(255,255,255,.92);
+    border:3px solid #20ad63;
+    border-radius:15px;
+    text-align:center;
+    font-size:15px;
+    font-weight:900;
+    overflow-wrap:anywhere;
+}
+
+/* ホーム画面の自動生成表示 */
+.main-auto{
+    text-align:center;
+    font-size:14px;
+    font-weight:900;
+    margin:-20px 0 14px;
+    color:#0f7a4a;
+    overflow-wrap:anywhere;
+}
+
+.reset-button{
+    position:relative;
+    display:block;
+    width:min(100%,500px);
+    margin:25px auto 0;
+    min-height:50px;
+    border:3px solid #d94c4c;
+    border-radius:14px;
+    background:white;
+    color:#b52d2d;
+    font-size:17px;
+    font-weight:1000;
+}
+
+.roulette-screen{
+    padding-top:70px;
+}
+
+.result{
+    width:min(100%,600px);
+    min-height:50px;
+    margin:0 auto 10px;
+    text-align:center;
+    font-size:20px;
+    font-weight:1000;
+    overflow-wrap:anywhere;
+}
+
+.roulette-area{
+    position:relative;
+    width:min(88vw,430px);
+    aspect-ratio:1;
+    margin:10px auto 20px;
+}
+
+.wheel{
+    position:absolute;
+    inset:0;
+    border-radius:50%;
+    border:8px solid white;
+    box-shadow:
+        0 5px 18px rgba(0,0,0,.2),
+        inset 0 0 0 3px #249ed0;
+    transition:
+        transform 4s cubic-bezier(.12,.7,.15,1);
+    overflow:hidden;
+}
+
+.wheel-label{
+    position:absolute;
+    left:50%;
+    top:50%;
+    z-index:4;
+    width:90px;
+    text-align:center;
+    font-size:clamp(11px,3vw,17px);
+    font-weight:1000;
+    color:#073b52;
+    text-shadow:
+        0 1px 0 white,
+        0 -1px 0 white,
+        1px 0 0 white,
+        -1px 0 0 white;
+    pointer-events:none;
+    transform-origin:center center;
+}
+
+.wheel-label.jackpot{
+    color:#9b6500;
+}
+
+.pointer{
+    position:absolute;
+    top:-13px;
+    left:50%;
+    transform:translateX(-50%);
+    width:36px;
+    height:38px;
+    background:#e33;
+    clip-path:polygon(0 0,100% 0,50% 100%);
+    z-index:20;
+    filter:drop-shadow(0 2px 2px rgba(0,0,0,.25));
+    pointer-events:none;
+}
+
+.roulette-center{
+    position:absolute;
+    left:50%;
+    top:50%;
+    transform:translate(-50%,-50%);
+    width:52px;
+    height:52px;
+    border-radius:50%;
+    background:white;
+    border:4px solid #249ed0;
+    z-index:10;
+    pointer-events:none;
+}
+
+.roulette-form{
+    width:min(100%,500px);
+    margin:0 auto;
+}
+
+.bet-label{
+    display:block;
+    text-align:center;
+    font-size:17px;
+    font-weight:900;
+    margin-bottom:7px;
+}
+
+#bet,
+#cardBet,
+#cardMultiplier{
+    display:block;
+    width:100%;
+    height:52px;
+    padding:8px 12px;
+    border:3px solid #249ed0;
+    border-radius:14px;
+    background:white;
+    color:#073b52;
+    font-size:20px;
+    font-weight:900;
+    text-align:center;
+    outline:none;
+}
+
+.spin-button{
+    width:100%;
+    min-height:55px;
+    margin-top:10px;
+    border:0;
+    border-radius:14px;
+    background:#249ed0;
+    color:white;
+    font-size:20px;
+    font-weight:1000;
+}
+
+.spin-button:disabled{
+    opacity:.5;
+}
+
+.notice{
+    text-align:center;
+    margin-top:12px;
+    font-size:14px;
+    font-weight:800;
+}
+
+.custom-keyboard{
+    position:fixed;
+    left:0;
+    right:0;
+    bottom:0;
+    z-index:9999;
+    padding:8px;
+    background:rgba(225,249,255,.98);
+    border-top:3px solid #249ed0;
+    box-shadow:0 -5px 20px rgba(0,0,0,.18);
+    display:none;
+}
+
+.quiz-keyboard-question{
+    width:min(100%,500px);
+    margin:0 auto 8px;
+    padding:8px 12px;
+    border:3px solid #249ed0;
+    border-radius:14px;
+    background:white;
+    color:#073b52;
+    text-align:center;
+    font-size:26px;
+    font-weight:1000;
+    box-sizing:border-box;
+}
+
+.keyboard-display{
+    width:min(100%,500px);
+    margin:0 auto 8px;
+    min-height:48px;
+    padding:8px 12px;
+    border:3px solid #249ed0;
+    border-radius:14px;
+    background:white;
+    color:#073b52;
+    text-align:center;
+    font-size:22px;
+    font-weight:1000;
+    word-break:break-all;
+    overflow-wrap:anywhere;
+}
+
+.keyboard-grid{
+    width:min(100%,500px);
+    margin:auto;
+    display:grid;
+    grid-template-columns:repeat(3,1fr);
+    gap:6px;
+}
+
+.key{
+    min-height:48px;
+    border:2px solid #249ed0;
+    border-radius:10px;
+    background:white;
+    color:#073b52;
+    font-size:20px;
+    font-weight:1000;
+}
+
+.key:active{
+    transform:scale(.95);
+    background:#dff7ff;
+}
+
+.key-wide{
+    grid-column:span 3;
+}
+
+.key-all{
+    background:#e8fff0;
+    border-color:#20ad63;
+}
+
+.key-enter{
+    background:#249ed0;
+    color:white;
+}
+
+.overlay{
+    position:fixed;
+    inset:0;
+    z-index:20000;
+    background:rgba(0,0,0,.55);
+    display:none;
+    align-items:center;
+    justify-content:center;
+    padding:20px;
+}
+
+.overlay.show{
+    display:flex;
+}
+
+.overlay-box{
+    width:min(100%,450px);
+    padding:25px;
+    background:white;
+    border-radius:20px;
+    text-align:center;
+    box-shadow:0 10px 35px rgba(0,0,0,.3);
+}
+
+.overlay-title{
+    font-size:28px;
+    font-weight:1000;
+    margin-bottom:15px;
+}
+
+.overlay-text{
+    font-size:17px;
+    font-weight:800;
+    line-height:1.6;
+    overflow-wrap:anywhere;
+}
+
+
+#debugOverlay .overlay-box{
+    max-height:90vh;
+    overflow-y:auto;
+    box-sizing:border-box;
+}
+.overlay-button{
+    width:100%;
+    min-height:52px;
+    margin-top:15px;
+    border:0;
+    border-radius:13px;
+    background:#249ed0;
+    color:white;
+    font-size:18px;
+    font-weight:1000;
+}
+
+.clear-box{
+    width:min(100%,500px);
+    padding:30px 20px;
+    background:white;
+    border-radius:25px;
+    text-align:center;
+    box-shadow:
+        0 0 0 4px #fff,
+        0 0 35px rgba(36,158,208,.8),
+        0 15px 50px rgba(0,0,0,.4);
+    animation:
+        clearAppear .7s
+        cubic-bezier(.2,1.5,.4,1);
+}
+
+.clear-title{
+    font-size:38px;
+    font-weight:1000;
+    margin-bottom:15px;
+    background:
+        linear-gradient(
+            90deg,
+            #249ed0,
+            #20ad63,
+            #249ed0
+        );
+    -webkit-background-clip:text;
+    color:transparent;
+    background-size:200% auto;
+    animation:titleShine 1.5s linear infinite;
+}
+
+.clear-number{
+    font-size:28px;
+    font-weight:1000;
+    margin:10px 0;
+}
+
+.clear-sub{
+    font-size:16px;
+    font-weight:900;
+    line-height:1.7;
+}
+
+.ten-trillion-box{
+    width:min(100%,520px);
+    padding:35px 20px;
+    background:
+        radial-gradient(
+            circle at 50% 0%,
+            #fff8c7 0,
+            #fff 42%,
+            #eef9ff 100%
+        );
+    border:5px solid #ffd95e;
+    border-radius:28px;
+    text-align:center;
+    box-shadow:
+        0 0 20px #ffd95e,
+        0 0 60px rgba(255,217,94,.9),
+        0 20px 60px rgba(0,0,0,.45);
+    animation:
+        tenTrillionAppear .9s
+        cubic-bezier(.15,1.4,.4,1);
+}
+
+.ten-trillion-title{
+    font-size:42px;
+    font-weight:1000;
+    color:#d18c00;
+    text-shadow:
+        0 2px 0 white,
+        0 0 15px #ffd95e;
+    animation:
+        goldPulse 1s
+        ease-in-out infinite alternate;
+}
+
+.ten-trillion-number{
+    margin:15px 0;
+    font-size:30px;
+    font-weight:1000;
+}
+
+.ten-trillion-sub{
+    font-size:17px;
+    font-weight:900;
+    line-height:1.8;
+}
+
+.gold-particle{
+    position:fixed;
+    pointer-events:none;
+    z-index:25000;
+    font-size:24px;
+    animation:
+        goldFall 2.8s
+        cubic-bezier(.15,.7,.3,1)
+        forwards;
+}
+
+.confetti{
+    position:fixed;
+    pointer-events:none;
+    z-index:24000;
+    font-size:24px;
+    animation:
+        confettiFall 2.5s
+        linear
+        forwards;
+}
+
+.clear-ring{
+    position:fixed;
+    left:50%;
+    top:50%;
+    width:20px;
+    height:20px;
+    border:8px solid white;
+    border-radius:50%;
+    pointer-events:none;
+    z-index:23000;
+    transform:translate(-50%,-50%);
+    animation:
+        ringExpand 1.2s
+        ease-out
+        forwards;
+}
+
+.flash{
+    position:fixed;
+    inset:0;
+    background:white;
+    pointer-events:none;
+    z-index:22000;
+    animation:
+        flashEffect .65s
+        ease-out
+        forwards;
+}
+
+@keyframes clearAppear{
+    from{
+        transform:scale(.5) rotate(-8deg);
+        opacity:0;
+    }
+    to{
+        transform:scale(1) rotate(0);
+        opacity:1;
+    }
+}
+
+@keyframes titleShine{
+    from{
+        background-position:0% center;
+    }
+    to{
+        background-position:200% center;
+    }
+}
+
+@keyframes tenTrillionAppear{
+    from{
+        transform:scale(.3) rotate(-12deg);
+        opacity:0;
+    }
+    70%{
+        transform:scale(1.08) rotate(3deg);
+        opacity:1;
+    }
+    to{
+        transform:scale(1) rotate(0);
+        opacity:1;
+    }
+}
+
+@keyframes goldPulse{
+    from{
+        transform:scale(1);
+    }
+    to{
+        transform:scale(1.08);
+    }
+}
+
+@keyframes goldFall{
+    0%{
+        transform:
+            translate(0,-50px)
+            rotate(0deg)
+            scale(.5);
+        opacity:0;
+    }
+
+    15%{
+        opacity:1;
+    }
+
+    100%{
+        transform:
+            translate(var(--x),100vh)
+            rotate(900deg)
+            scale(1.2);
+        opacity:0;
+    }
+}
+
+@keyframes confettiFall{
+    0%{
+        transform:
+            translateY(-40px)
+            rotate(0deg);
+        opacity:1;
+    }
+
+    100%{
+        transform:
+            translateY(110vh)
+            rotate(1080deg);
+        opacity:0;
+    }
+}
+
+@keyframes ringExpand{
+    from{
+        width:20px;
+        height:20px;
+        opacity:1;
+    }
+
+    to{
+        width:150vmax;
+        height:150vmax;
+        opacity:0;
+    }
+}
+
+@keyframes flashEffect{
+    0%{
+        opacity:.9;
+    }
+
+    100%{
+        opacity:0;
+    }
+}
+
+.jackpot-box{
+    position:relative;
+    overflow:hidden;
+}
+
+.jackpot-title{
+    font-size:34px;
+    font-weight:1000;
+    color:#d18c00;
+}
+
+.star{
+    position:fixed;
+    pointer-events:none;
+    z-index:21000;
+    font-size:22px;
+    animation:
+        starFall 1.8s
+        linear
+        forwards;
+}
+
+@keyframes starFall{
+    from{
+        transform:
+            translateY(-20px)
+            rotate(0deg);
+        opacity:1;
+    }
+
+    to{
+        transform:
+            translateY(100vh)
+            rotate(720deg);
+        opacity:0;
+    }
+}
+
+/* =========================================
+   CARD
+========================================= */
+
+.card-screen{
+    padding-top:70px;
+}
+
+.card-form{
+    width:min(100%,500px);
+    margin:0 auto;
+}
+
+.card-label{
+    display:block;
+    text-align:center;
+    font-size:17px;
+    font-weight:900;
+    margin:12px 0 7px;
+}
+
+.card-area{
+    width:min(100%,500px);
+    margin:20px auto;
+    display:flex;
+    justify-content:center;
+    gap:18px;
+}
+
+.playing-card{
+    width:140px;
+    height:200px;
+    border:0;
+    border-radius:16px;
+    padding:0;
+    background:transparent;
+    perspective:800px;
+}
+
+.card-inner{
+    position:relative;
+    width:100%;
+    height:100%;
+    transition:transform .55s;
+    transform-style:preserve-3d;
+}
+
+.playing-card.flipped .card-inner{
+    transform:rotateY(180deg);
+}
+
+.card-face{
+    position:absolute;
+    inset:0;
+    backface-visibility:hidden;
+    border:4px solid #249ed0;
+    border-radius:16px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-size:42px;
+    font-weight:1000;
+    box-shadow:0 5px 15px rgba(0,0,0,.2);
+}
+
+.card-back{
+    background:
+        repeating-linear-gradient(
+            45deg,
+            #249ed0 0,
+            #249ed0 8px,
+            #dff8ff 8px,
+            #dff8ff 16px
+        );
+    color:white;
+}
+
+.card-front{
+    background:white;
+    transform:rotateY(180deg);
+    color:#073b52;
+}
+
+.card-start-button{
+    width:100%;
+    min-height:55px;
+    margin-top:10px;
+    border:0;
+    border-radius:14px;
+    background:#249ed0;
+    color:white;
+    font-size:20px;
+    font-weight:1000;
+}
+
+.card-start-button:disabled{
+    opacity:.5;
+}
+
+.card-message{
+    width:min(100%,600px);
+    min-height:50px;
+    margin:10px auto;
+    text-align:center;
+    font-size:20px;
+    font-weight:1000;
+    overflow-wrap:anywhere;
+}
+
+.card-limit{
+    text-align:center;
+    font-size:14px;
+    font-weight:800;
+    margin-top:10px;
+}
+
+/* =========================================
+   RANK
+========================================= */
+
+.rank-list{
+    width:min(100%,600px);
+    margin:0 auto;
+    display:flex;
+    flex-direction:column;
+    gap:8px;
+}
+
+.rank-current{
+    width:min(100%,500px);
+    margin:0 auto 18px;
+    padding:18px;
+    background:white;
+    border:3px solid #249ed0;
+    border-radius:15px;
+    text-align:center;
+}
+
+.rank-current-title{
+    font-size:18px;
+    font-weight:900;
+}
+
+.rank-current-value{
+    margin-top:5px;
+    font-size:34px;
+    font-weight:1000;
+}
+
+.rank-item{
+    padding:12px;
+    background:white;
+    border:3px solid #249ed0;
+    border-radius:15px;
+    display:flex;
+    align-items:center;
+    gap:10px;
+}
+
+.rank-item.done{
+    border-color:#20ad63;
+}
+
+.rank-number{
+    width:70px;
+    flex-shrink:0;
+    font-size:20px;
+    font-weight:1000;
+}
+
+.rank-condition{
+    flex:1;
+    font-size:16px;
+    font-weight:900;
+    overflow-wrap:anywhere;
+}
+
+.rank-status{
+    font-size:18px;
+    font-weight:1000;
+}
+
+.rank-up-box{
+    width:min(100%,520px);
+    padding:35px 20px;
+    background:
+        radial-gradient(
+            circle at 50% 0%,
+            #fff8c7 0,
+            #fff 45%,
+            #eef9ff 100%
+        );
+    border:5px solid #ffd95e;
+    border-radius:28px;
+    text-align:center;
+    box-shadow:
+        0 0 20px #ffd95e,
+        0 0 60px rgba(255,217,94,.9),
+        0 20px 60px rgba(0,0,0,.45);
+    animation:
+        tenTrillionAppear .9s
+        cubic-bezier(.15,1.4,.4,1);
+}
+
+.rank-up-title{
+    font-size:42px;
+    font-weight:1000;
+    color:#d18c00;
+    text-shadow:
+        0 2px 0 white,
+        0 0 15px #ffd95e;
+}
+
+.rank-up-number{
+    margin:15px 0;
+    font-size:30px;
+    font-weight:1000;
+}
+
+.rank-up-sub{
+    font-size:17px;
+    font-weight:900;
+    line-height:1.8;
+}
+
+/* =========================================
+   無量大数最終演出
+========================================= */
+
+.muryo-overlay{
+    position:fixed;
+    inset:0;
+    z-index:30000;
+    background:
+        radial-gradient(
+            circle,
+            rgba(255,255,255,.98),
+            rgba(120,210,255,.92) 35%,
+            rgba(20,20,80,.98) 100%
+        );
+    display:none;
+    align-items:center;
+    justify-content:center;
+    overflow:hidden;
+}
+
+.muryo-overlay.show{
+    display:flex;
+}
+
+.muryo-box{
+    position:relative;
+    z-index:5;
+    width:min(94%,650px);
+    padding:30px 15px;
+    text-align:center;
+    color:white;
+    animation:
+        muryoAppear 1.2s
+        cubic-bezier(.15,1.5,.3,1);
+}
+
+.muryo-title{
+    font-size:clamp(34px,9vw,70px);
+    font-weight:1000;
+    text-shadow:
+        0 0 10px white,
+        0 0 30px #ffd95e,
+        0 0 60px #249ed0;
+}
+
+.muryo-number{
+    margin:20px 0;
+    font-size:clamp(20px,5vw,42px);
+    font-weight:1000;
+    overflow-wrap:anywhere;
+}
+
+.muryo-sub{
+    font-size:clamp(16px,4vw,24px);
+    font-weight:1000;
+    line-height:1.8;
+}
+
+.muryo-button{
+    width:min(100%,450px);
+    min-height:55px;
+    margin-top:25px;
+    border:3px solid white;
+    border-radius:15px;
+    background:rgba(255,255,255,.2);
+    color:white;
+    font-size:20px;
+    font-weight:1000;
+}
+
+.muryo-particle{
+    position:fixed;
+    pointer-events:none;
+    z-index:2;
+    font-size:28px;
+    animation:
+        muryoParticle 4s
+        linear
+        forwards;
+}
+
+.muryo-star{
+    position:fixed;
+    pointer-events:none;
+    z-index:1;
+    font-size:22px;
+    animation:
+        muryoStar 3s
+        linear
+        forwards;
+}
+
+@keyframes muryoAppear{
+    from{
+        transform:scale(.1) rotate(-15deg);
+        opacity:0;
+    }
+    65%{
+        transform:scale(1.1) rotate(3deg);
+        opacity:1;
+    }
+    to{
+        transform:scale(1) rotate(0);
+        opacity:1;
+    }
+}
+
+@keyframes muryoParticle{
+    from{
+        transform:
+            translate(0,0)
+            scale(.2)
+            rotate(0);
+        opacity:0;
+    }
+    15%{
+        opacity:1;
+    }
+    to{
+        transform:
+            translate(var(--mx),var(--my))
+            scale(1.5)
+            rotate(1000deg);
+        opacity:0;
+    }
+}
+
+@keyframes muryoStar{
+    from{
+        transform:scale(.2) rotate(0);
+        opacity:0;
+    }
+    20%{
+        opacity:1;
+    }
+    to{
+        transform:scale(2) rotate(900deg);
+        opacity:0;
+    }
+}
+
+</style>
+</head>
+
+<!-- WATER CLICKER PATCHED 2026-09-26 -->
+<body>
+
+<section id="home">
+
+<div class="title">
+    WATER CLICKER
+</div>
+
+<div id="mainWater" class="main-water">
+    0ml
+</div>
+
+<div id="mainPower" class="main-power">
+    1クリック：1ml
+</div>
+
+<div id="mainAuto" class="main-auto hidden"></div>
+
+<div class="drop-area">
+
+<button
+    id="dropButton"
+    class="drop-button"
+    type="button"
+    aria-label="水をクリック">
+</button>
+
+<button
+    id="dropHit"
+    class="drop-hit"
+    type="button"
+    aria-label="水をクリック">
+</button>
+
+</div>
+
+<div class="menu-buttons">
+
+<button
+    id="shopOpen"
+    class="menu-button"
+    type="button">
+    SHOP
+</button>
+
+<button
+    id="gambleOpen"
+    class="menu-button"
+    type="button">
+    GAMBLING
+</button>
+
+</div>
+
+<div class="menu-buttons">
+
+<button
+    id="rankOpen"
+    class="rank-home-button"
+    type="button">
+    RANK
+</button>
+
+<button
+    id="skinOpen"
+    class="menu-button"
+    type="button">
+    SKIN
+</button>
+
+</div>
+
+</section>
+
+
+<section id="shop" class="screen hidden">
+
+<div class="title">
+    SHOP
+</div>
+
+<div id="shopWater" class="water-display">
+    所持水：0ml
+</div>
+
+<div class="shop-tabs">
+    <button id="shopTabClick" class="shop-tab active" type="button">クリックアイテム</button>
+    <button id="shopTabAuto" class="shop-tab" type="button">オートアイテム</button>
+</div>
+
+<div id="autoSummary" class="auto-summary hidden"></div>
+
+<div id="shopList" class="shop-list"></div>
+
+<div class="save-code-area">
+
+<div class="save-code-title">💾 セーブデータ</div>
+
+<div class="save-code-description">セーブコードはゲームデータを簡易難読化したコードです。<br>生成するたびに同じデータでも一部の記号列が変わります。</div>
+
+<div class="save-code-buttons">
+<button id="saveCodeGenerate" class="save-code-button" type="button">セーブコードをコピー</button>
+<button id="saveCodeLoad" class="save-code-button" type="button">コードを読み込む</button>
+</div>
+
+<textarea id="saveCodeText" class="save-code-textarea hidden" inputmode="text" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="ここにセーブコードを貼り付けします"></textarea>
+
+
+<div id="saveCodeStatus" class="save-code-status"></div>
+
+</div>
+
+<button
+    id="resetButton"
+    class="reset-button"
+    type="button">
+    データをリセット
+</button>
+
+<button
+    id="shopBackButton"
+    class="rank-home-button shop-back-button"
+    type="button"
+    style="display:none;">
+    ← ホームに戻る
+</button>
+
+</section>
+
+
+<section
+    id="gamble"
+    class="screen roulette-screen hidden">
+
+<div id="gambleWater" class="water-display">
+    所持水：0ml
+</div>
+
+<div id="result" class="result">
+    水を賭けてGAMBLINGを回そう！
+</div>
+
+<div class="roulette-area">
+
+<div id="wheel" class="wheel"></div>
+
+<div class="roulette-center"></div>
+
+<div class="pointer"></div>
+
+<button
+    id="skipButton"
+    class="skip-button"
+    type="button">
+    スキップ
+</button>
+
+</div>
+
+<div class="roulette-form">
+
+<label
+    class="bet-label"
+    for="bet">
+    賭ける水量
+</label>
+
+<input
+    id="bet"
+    type="text"
+    inputmode="none"
+    readonly
+    autocomplete="off"
+    value=""
+    aria-label="賭ける水量">
+
+<button
+    id="spinButton"
+    class="spin-button"
+    type="button">
+    START
+</button>
+
+<div id="rouletteCooldown" class="notice">
+    ルーレット：あと5回
+</div>
+
+<div id="jackpotNotice" class="notice">
+    JACKPOT：×1000000
+</div>
+
+</div>
+
+</section>
+
+
+<section
+    id="cardGame"
+    class="screen card-screen hidden">
+
+<div class="title">
+    CARD
+</div>
+
+<div id="cardWater" class="water-display">
+    所持水：0ml
+</div>
+
+<div id="cardMessage" class="card-message">
+    倍率を指定して、カードを2枚置こう！
+</div>
+
+<div class="card-form">
+
+<label
+    class="card-label"
+    for="cardBet">
+    賭ける水量
+</label>
+
+<input
+    id="cardBet"
+    type="text"
+    inputmode="none"
+    readonly
+    autocomplete="off"
+    value=""
+    aria-label="カードに賭ける水量">
+
+<div id="cardFee" class="card-limit">
+    手数料：0ml
+</div>
+
+<label
+    class="card-label"
+    for="cardMultiplier">
+    倍率
+</label>
+
+<input
+    id="cardMultiplier"
+    type="text"
+    inputmode="none"
+    readonly
+    autocomplete="off"
+    value=""
+    aria-label="カード倍率">
+
+<div id="cardArea" class="card-area hidden-card">
+
+<button
+    id="card1"
+    class="playing-card"
+    type="button">
+
+<div class="card-inner">
+
+<div class="card-face card-back">
+    ?
+</div>
+
+<div
+    id="cardFront1"
+    class="card-face card-front">
+    ?
+</div>
+
+</div>
+
+</button>
+
+
+<button
+    id="card2"
+    class="playing-card"
+    type="button">
+
+<div class="card-inner">
+
+<div class="card-face card-back">
+    ?
+</div>
+
+<div
+    id="cardFront2"
+    class="card-face card-front">
+    ?
+</div>
+
+</div>
+
+</button>
+
+</div>
+
+<button
+    id="cardStart"
+    class="card-start-button"
+    type="button">
+    カードを置く
+</button>
+
+<div id="cardCooldown" class="card-limit">
+    クールタイム：使用可能
+</div>
+
+<div id="cardMultiplierLimit" class="card-limit">
+    倍率：10倍 ～ 1万倍
+</div>
+
+</div>
+
+</section>
+
+
+<section
+    id="slotGame"
+    class="screen slot-screen hidden">
+
+<div class="title">CALC CHALLENGE</div>
+
+<div id="slotWater" class="water-display">
+    所持水：0ml
+</div>
+
+<div id="slotResult" class="result">
+    九九の計算問題に5秒以内で正解しよう！
+</div>
+
+<div class="roulette-form">
+
+<label class="bet-label" for="slotBet">
+    賭ける水量
+</label>
+
+<input
+    id="slotBet"
+    type="text"
+    inputmode="none"
+    readonly
+    autocomplete="off"
+    value=""
+    placeholder="賭ける水量を入力"
+    aria-label="計算チャレンジに賭ける水量">
+
+<label class="bet-label" for="quizAnswer">
+    答え
+</label>
+
+<input
+    id="quizAnswer"
+    type="text"
+    inputmode="none"
+    readonly
+    autocomplete="off"
+    placeholder="答えを入力"
+    aria-label="九九の答え">
+
+<div class="quiz-question" id="quizQuestion">
+    ? × ? = ?
+</div>
+
+<div class="quiz-timer" id="quizTimer">
+    制限時間：5.0秒
+</div>
+
+<button
+    id="slotSpinButton"
+    class="spin-button"
+    type="button">
+    問題を出す
+</button>
+
+<div class="notice">
+    正解：賭けた水の×100 / 失敗・時間切れ：賭けた水の×0.01
+</div>
+
+</div>
+
+</section>
+
+
+<section
+    id="rankScreen"
+    class="screen hidden">
+
+<div class="title">
+    RANK
+</div>
+
+<div id="rankWater" class="water-display">
+    所持水：0ml
+</div>
+
+<button id="onlineOpen" class="online-open-button" type="button">
+    🌐 オンラインランキング
+</button>
+
+<div class="rank-current">
+
+<div class="rank-current-title">
+    現在のRANK
+</div>
+
+<div
+    id="rankCurrentValue"
+    class="rank-current-value">
+    RANK 0
+</div>
+
+</div>
+
+<div
+    id="rankList"
+    class="rank-list">
+</div>
+
+<button
+    id="rankBackButton"
+    class="rank-home-button rank-back-button"
+    type="button"
+    style="display:none;">
+    ← ホームに戻る
+</button>
+
+</section>
+
+
+<section id="skinScreen" class="screen hidden">
+
+<div class="title">
+    SKIN
+</div>
+
+<div id="skinCurrent" class="water-display">
+    使用中：ノーマル
+</div>
+
+<div id="skinList" class="shop-list"></div>
+
+<button
+    id="skinBackButton"
+    class="rank-home-button shop-back-button"
+    type="button"
+    style="display:none;">
+    ← ホームに戻る
+</button>
+
+</section>
+
+
+<section id="onlineScreen" class="screen hidden">
+
+<div class="title" style="font-size:28px;">
+    ONLINE RANKING
+</div>
+
+<div class="online-card">
+
+<div id="onlineMyScore" class="online-score">最高到達水量：0ml</div>
+<div id="onlineMyPos" class="online-score">未登録</div>
+<div id="onlineNotice" class="online-notice hidden"></div>
+
+<input
+    id="onlineName"
+    class="online-input"
+    type="text"
+    maxlength="12"
+    autocomplete="off"
+    autocapitalize="off"
+    spellcheck="false"
+    placeholder="名前（12文字まで）">
+
+<div class="online-buttons">
+    <button id="onlineSubmit" class="online-button" type="button">登録・更新</button>
+    <button id="onlineDelete" class="online-button sub" type="button">削除</button>
+</div>
+
+</div>
+
+<div id="onlineMessage" class="online-message"></div>
+
+<div class="online-head">
+    <span>TOP 50</span>
+    <button id="onlineReload" class="online-button sub" type="button">↻ 更新</button>
+</div>
+
+<div id="onlineList" class="shop-list"></div>
+
+<button
+    id="onlineBackButton"
+    class="rank-home-button shop-back-button"
+    type="button"
+    style="display:none;">
+    ← ホームに戻る
+</button>
+
+</section>
+
+
+<button
+    id="backButton"
+    class="back-button"
+    type="button">
+    ← 戻る
+</button>
+
+
+<div id="gamblingNav" class="gambling-nav">
+
+<button id="gambleBackButton" class="gamble-nav-button" type="button">戻る</button>
+<button id="rouletteNavButton" class="gamble-nav-button" type="button">ルーレット</button>
+<button id="cardNavButton" class="gamble-nav-button" type="button">カード</button>
+<button id="quizNavButton" class="gamble-nav-button" type="button">クイズ</button>
+
+</div>
+
+
+<div
+    id="customKeyboard"
+    class="custom-keyboard">
+
+<div
+    id="quizKeyboardQuestion"
+    class="quiz-keyboard-question"
+    style="display:none;">
+    ? × ? = ?
+</div>
+
+<div
+    id="keyboardDisplay"
+    class="keyboard-display">
+    0ml
+</div>
+
+<div class="keyboard-grid">
+
+<button class="key" type="button" data-num="1">1</button>
+<button class="key" type="button" data-num="2">2</button>
+<button class="key" type="button" data-num="3">3</button>
+
+<button class="key" type="button" data-num="4">4</button>
+<button class="key" type="button" data-num="5">5</button>
+<button class="key" type="button" data-num="6">6</button>
+
+<button class="key" type="button" data-num="7">7</button>
+<button class="key" type="button" data-num="8">8</button>
+<button class="key" type="button" data-num="9">9</button>
+
+<button
+    id="clearBet"
+    class="key"
+    type="button">
+    C
+</button>
+
+<button
+    class="key"
+    type="button"
+    data-num="0">
+    0
+</button>
+
+<button
+    id="backspaceBet"
+    class="key"
+    type="button">
+    ←
+</button>
+
+<button
+    id="allBet"
+    class="key key-wide key-all"
+    type="button">
+    最大
+</button>
+
+<button
+    id="keyboardEnter"
+    class="key key-wide key-enter"
+    type="button">
+    決定
+</button>
+
+</div>
+</div>
+
+
+<div id="warningOverlay" class="overlay">
+
+<div class="overlay-box">
+
+<div class="overlay-title">
+    ⚠️ 表示桁数上限
+</div>
+
+<div
+    id="warningText"
+    class="overlay-text">
+</div>
+
+<button
+    id="warningResetButton"
+    class="overlay-button"
+    type="button">
+    リセット
+</button>
+
+</div>
+
+</div>
+
+
+<div id="clearOverlay" class="overlay">
+
+<div class="clear-box">
+
+<div class="clear-title">
+    🎉 GAME CLEAR! 🎉
+</div>
+
+<div
+    id="clearNumber"
+    class="clear-number">
+    100億ml達成！
+</div>
+
+<div
+    id="clearSub"
+    class="clear-sub">
+    ものすごい量の水を集めました！
+</div>
+
+<button
+    id="clearClose"
+    class="overlay-button"
+    type="button">
+    OK
+</button>
+
+</div>
+
+</div>
+
+
+<div id="tenTrillionOverlay" class="overlay">
+
+<div class="ten-trillion-box">
+
+<div
+    id="tenTrillionTitle"
+    class="ten-trillion-title">
+    💎 10兆ml達成！ 💎
+</div>
+
+<div
+    id="tenTrillionNumber"
+    class="ten-trillion-number">
+    10兆ml
+</div>
+
+<div
+    id="tenTrillionSub"
+    class="ten-trillion-sub">
+    桁がひとつ上がった。<br>
+    WATER CLICKERの世界が変わる――。
+</div>
+
+<button
+    id="tenTrillionClose"
+    class="overlay-button"
+    type="button">
+    さらに進む
+</button>
+
+</div>
+
+</div>
+
+
+<div id="jackpotOverlay" class="overlay">
+
+<div class="overlay-box jackpot-box">
+
+<div class="jackpot-title">
+    🎉 JACKPOT!! 🎉
+</div>
+
+<div
+    id="jackpotText"
+    class="overlay-text">
+    ×1000000
+</div>
+
+<button
+    id="jackpotClose"
+    class="overlay-button"
+    type="button">
+    OK
+</button>
+
+</div>
+
+</div>
+
+
+<div id="rankUpOverlay" class="overlay">
+
+<div class="rank-up-box">
+
+<div class="rank-up-title">
+    🏆 RANK UP! 🏆
+</div>
+
+<div
+    id="rankUpNumber"
+    class="rank-up-number">
+    RANK 1
+</div>
+
+<div
+    id="rankUpSub"
+    class="rank-up-sub">
+    新しい領域へ到達しました！
+</div>
+
+<button
+    id="rankUpClose"
+    class="overlay-button"
+    type="button">
+    OK
+</button>
+
+</div>
+
+</div>
+
+
+<div
+    id="muryoOverlay"
+    class="muryo-overlay">
+
+<div class="muryo-box">
+
+<div class="muryo-title">
+    🌌 MAXIMUM 🌌
+</div>
+
+<div
+    id="muryoNumber"
+    class="muryo-number">
+    無量大数
+</div>
+
+<div class="muryo-sub">
+    9999無量大数級の領域へ到達。<br>
+    WATER CLICKER、極限到達。
+</div>
+
+<button
+    id="muryoClose"
+    class="muryo-button"
+    type="button">
+    OK
+</button>
+
+</div>
+
+</div>
+
+
+<div id="debugOverlay" class="overlay">
+
+<div class="overlay-box">
+
+<div class="overlay-title">🛠️ DEBUG MODE</div>
+<div class="overlay-text">デバッグ設定</div>
+
+<div class="debug-description">所持水：現在持っている水の量を設定します。</div>
+<input id="debugWater" class="debug-field" type="text" inputmode="numeric" placeholder="所持水">
+
+<div class="debug-description">1クリックの量：水滴を1回クリックしたときに増える水量を設定します。</div>
+<input id="debugClickAmount" class="debug-field" type="text" inputmode="numeric" placeholder="1クリックの量">
+
+<div class="debug-description">カードのクールタイム：カードゲームを再びプレイできるまでの時間（秒）を設定します。</div>
+<input id="debugCardCooldown" class="debug-field" type="text" inputmode="decimal" placeholder="カードのクールタイム（秒）">
+
+<div class="debug-description">ルーレットのクールタイム発生回数：何回ルーレットを回すとクールタイムになるか設定します。</div>
+<input id="debugRouletteUses" class="debug-field" type="text" inputmode="numeric" placeholder="ルーレットの回数">
+
+<div class="debug-description">ルーレットのクールタイム：指定回数後、再びルーレットを使えるまでの時間（秒）を設定します。</div>
+<input id="debugRouletteCooldown" class="debug-field" type="text" inputmode="decimal" placeholder="ルーレットのクールタイム（秒）">
+
+<div class="debug-description">ルーレットのジャックポット倍率：ジャックポットに当たったときの倍率を設定します。</div>
+<input id="debugJackpot" class="debug-field" type="text" inputmode="numeric" placeholder="ルーレットのジャックポット倍率">
+
+<div class="debug-description">クイズの倍率：九九の問題に正解したときの掛け金に対する倍率を設定します。</div>
+<input id="debugQuizMultiplier" class="debug-field" type="text" inputmode="numeric" placeholder="クイズの倍率">
+
+<div class="debug-description">クイズの制限時間：九九の問題に答えられる時間（秒）を設定します。</div>
+<input id="debugQuizTime" class="debug-field" type="text" inputmode="decimal" placeholder="クイズの制限時間（秒）">
+
+<div class="debug-description">クイズのクールタイム：クイズ終了後、次の問題を出せるまでの時間（秒）を設定します。</div>
+<input id="debugQuizCooldown" class="debug-field" type="text" inputmode="decimal" placeholder="クイズのクールタイム（秒）">
+
+<div class="debug-description">カード最大倍率：カードゲームで設定できる最大倍率を設定します。</div>
+<input id="debugCardMax" class="debug-field" type="text" inputmode="numeric" placeholder="カード最大倍率">
+
+<div class="debug-section-title">🛒 カスタム商品追加</div>
+<div class="debug-description">商品名：SHOPに表示する名前を入力します。</div>
+<input id="debugCustomName" class="debug-field" type="text" maxlength="40" placeholder="商品名">
+
+<div class="debug-description">1クリック量：この商品を使用したときの1クリック量です。</div>
+<input id="debugCustomGain" class="debug-field" type="text" inputmode="numeric" placeholder="1クリック量">
+
+<div class="debug-description">値段：購入に必要な水量です。</div>
+<input id="debugCustomCost" class="debug-field" type="text" inputmode="numeric" placeholder="値段">
+
+<button id="debugCustomAdd" class="debug-add-button" type="button">＋ 商品を追加</button>
+<div id="debugCustomList" class="debug-custom-list">カスタム商品はまだありません。</div>
+
+<div class="debug-hint">
+変更後に「適用」を押してください。<br>
+数値を変更すると各ゲームの設定に反映されます。
+</div>
+
+<button id="debugApply" class="overlay-button" type="button">適用</button>
+<button id="debugReset" class="overlay-button debug-reset-button" type="button">データリセット</button>
+<button id="debugClose" class="overlay-button" type="button">閉じる</button>
+
+</div>
+</div>
+
+
+<script>
+/* 全ボタンの押下状態を確実に可視化（タッチ/マウス両対応） */
+(function(){
+    function pressButton(e){
+        const b=e.target.closest && e.target.closest("button");
+        if(b){ b.classList.add("button-pressed"); }
+    }
+    function releaseButton(e){
+        const b=e.target.closest && e.target.closest("button");
+        if(b){ b.classList.remove("button-pressed"); }
+    }
+    document.addEventListener("pointerdown", pressButton, true);
+    document.addEventListener("pointerup", releaseButton, true);
+    document.addEventListener("pointercancel", releaseButton, true);
+    document.addEventListener("pointerleave", releaseButton, true);
+    document.addEventListener("click", releaseButton, true);
+})();
+</script>
+<script>
+
+/* =========================================
+   数値設定
+========================================= */
+
+const MURYO =
+    10n ** 68n;
+
+/*
+    10^1000で表示桁数警告・ゲーム内上限。
+*/
+const DISPLAY_WARNING_WATER =
+    10n ** 1000n;
+
+const MAX_WATER =
+    10n ** 1000n;
+
+const CLEAR_WATER =
+    9999n * MURYO;
+
+const TEN_TRILLION =
+    10000000000000n;
+
+const KEI =
+    10n ** 16n;
+
+const TEN_KEI =
+    10n ** 17n;
+
+const THOUSAND_KEI =
+    10n ** 19n;
+
+const TEN_GAI =
+    10n ** 21n;
+
+const THOUSAND_GAI =
+    10n ** 23n;
+
+const TEN_JO =
+    10n ** 29n;
+
+const THOUSAND_JO =
+    10n ** 31n;
+
+
+/* =========================================
+   RANK
+========================================= */
+
+/* =========================================
+   オンラインランキング設定
+   Supabase の「Project URL」と「anon / publishable key」を入れる。
+   （公開前提のキー。service_role / secret key は絶対に入れないこと）
+   空のままでもゲームは普通に遊べる（ランキング画面が「未設定」になるだけ）。
+========================================= */
+const ONLINE_RANKING = {
+    url:"https://xbaoyiurwqfkiqcpcdul.supabase.co",
+    anonKey:"sb_publishable_l_uxGl4G5zzz1ihHt-90yA_6xxbi7Bp"
+};
+
+const RANKS = [
+    {name:"RANK 1", value:10n},
+    {name:"RANK 2", value:10000000n},
+    {name:"RANK 3", value:10n ** 8n},
+    {name:"RANK 4", value:10n ** 12n},
+    {name:"RANK 5", value:10n ** 16n},
+    {name:"RANK 6", value:10n ** 20n},
+    {name:"RANK 7", value:10n ** 24n},
+    {name:"RANK 8", value:10n ** 28n},
+    {name:"RANK 9", value:10n ** 32n},
+    {name:"RANK 10", value:10n ** 36n},
+    {name:"RANK 11", value:10n ** 40n},
+    {name:"RANK 12", value:10n ** 44n},
+    {name:"RANK 13", value:10n ** 48n},
+    {name:"RANK 14", value:10n ** 52n},
+    {name:"RANK 15", value:10n ** 56n},
+    {name:"RANK 16", value:10n ** 60n},
+    {name:"RANK 17", value:10n ** 64n},
+    {name:"RANK 18", value:10n ** 68n}
+];
+
+for(let rank=19; rank<=484; rank++){
+    const exponent = 68 + (rank - 18) * 2;
+    RANKS.push({
+        name:"RANK " + rank,
+        value:10n ** BigInt(exponent)
+    });
+}
+
+
+/* =========================================
+   SHOP
+========================================= */
+
+const shop = [
+
+    {
+        name:"キャップ",
+        gain:2n,
+        cost:75n
+    },
+
+    {
+        name:"ボトル",
+        gain:5n,
+        cost:200n
+    },
+
+    {
+        name:"バケツ",
+        gain:20n,
+        cost:750n
+    },
+
+    {
+        name:"水槽",
+        gain:100n,
+        cost:3000n
+    },
+
+    {
+        name:"浴槽",
+        gain:500n,
+        cost:15000n
+    },
+
+    {
+        name:"プール",
+        gain:2000n,
+        cost:75000n
+    },
+
+    {
+        name:"ダム",
+        gain:15000n,
+        cost:500000n
+    },
+
+    {
+        name:"湖",
+        gain:100000n,
+        cost:3000000n
+    },
+
+    {
+        name:"海",
+        gain:1000000n,
+        cost:25000000n
+    },
+
+    {
+        name:"海王星",
+        gain:1000000000n,
+        cost:100000000n
+    },
+
+    {
+        name:"太陽系",
+        gain:10n ** 12n,
+        cost:5n * 10n ** 12n
+    },
+
+    {
+        name:"シリウス",
+        gain:10n ** 16n,
+        cost:5000n * 10n ** 12n
+    },
+
+    {
+        name:"銀河系",
+        gain:1000n * (10n ** 16n),
+        cost:10n ** 17n
+    },
+
+    {
+        name:"宇宙",
+        gain:10n * (10n ** 20n),
+        cost:10n ** 20n
+    },
+
+    {
+        name:"無限",
+        gain:100n * (10n ** 28n),
+        cost:10n * (10n ** 28n)
+    },
+
+    {
+        name:"果て",
+        gain:10n ** 32n,
+        cost:10n ** 33n
+    }
+
+];
+
+/* 日本語の大きな桁を使った追加SHOPアイテム（万〜無量大数） */
+const japaneseShopItems = [
+    ["万の水脈",4], ["億の泉",8], ["兆の海",12], ["京の銀河",16],
+    ["垓の星雲",20], ["秭の超銀河",24], ["穣の宇宙炉",28], ["溝の時空門",32],
+    ["澗の次元炉",36], ["正の虚空炉",40], ["載の星海",44], ["極の超新星",48],
+    ["恒河沙の宇宙",52], ["阿僧祇の銀河",56], ["那由他の特異点",60],
+    ["不可思議のブラックホール",64], ["無量大数のエターナルコア",68]
+];
+
+japaneseShopItems.forEach(([name, digits]) => {
+    const cost = 10n ** BigInt(digits);
+    const gain = 10n ** BigInt(digits - 1);
+    shop.push({name, gain, cost});
+});
+
+/* =========================================
+   AUTO SHOP（オートアイテム）
+   一度買うと、ずっと毎秒ml単位で水を生み出す。
+   買ったものの rate は合計される。
+   rate = 毎秒の生成量 / cost = 購入価格
+   ※数値は仮置き。ここの表を直せばバランス調整できる。
+========================================= */
+const autoShop = [
+    {id:"faucet",  name:"蛇口",     rate:1n,        cost:100n},
+    {id:"well",    name:"井戸",     rate:5n,        cost:500n},
+    {id:"pump",    name:"ポンプ",   rate:25n,       cost:2500n},
+    {id:"tower",   name:"給水塔",   rate:150n,      cost:15000n},
+    {id:"cloud",   name:"雨雲",     rate:1000n,     cost:100000n},
+    {id:"river",   name:"川",       rate:8000n,     cost:800000n},
+    {id:"source",  name:"水源地",   rate:60000n,    cost:6000000n},
+    {id:"glacier", name:"氷河",     rate:500000n,   cost:50000000n},
+    {id:"aquifer", name:"地下水脈", rate:5000000n,  cost:500000000n}
+];
+
+/* 大きな桁のオートアイテム（回収目安は約100秒で統一） */
+[
+    ["海流",10], ["水の惑星",12], ["彗星の氷",16], ["星間ガス雲",20],
+    ["水の銀河",24], ["銀河団の泉",28], ["宇宙の水脈",32], ["時空の蛇口",36],
+    ["次元の井戸",40], ["多元宇宙の湧水",44], ["虚空の水源",48], ["特異点ポンプ",52],
+    ["創世の滝",56], ["永遠の湧泉",60], ["無限の水門",64], ["万物の源泉",68]
+].forEach(([name, digits]) => {
+    autoShop.push({
+        id:"auto" + digits,
+        name:name,
+        rate:10n ** BigInt(digits - 2),
+        cost:10n ** BigInt(digits)
+    });
+});
+
+/* =========================================
+   SKIN（水滴の見た目）
+   rank = そのランクに到達すると解放（0 = 最初から）
+   g = グラデーション4色（明 → 暗） / border = ふち / hl = ハイライト / glow = 光
+   ※ここに足せばスキンを増やせる。
+========================================= */
+const SKINS = [
+    {
+        id:"normal", name:"ノーマル", rank:0,
+        desc:"いつもの水色の水滴",
+        g:["#b8f3ff","#69d8f2","#2ab0d8","#1595c3"],
+        border:"#168fbb", hl:"rgba(255,255,255,.68)", glow:"none"
+    },
+    {
+        id:"sakura", name:"サクラ", rank:4,
+        desc:"やわらかなピンク色",
+        g:["#ffe6f0","#ffb8d2","#f784b1","#e0588f"],
+        border:"#d24585", hl:"rgba(255,255,255,.75)", glow:"none"
+    },
+    {
+        id:"emerald", name:"エメラルド", rank:8,
+        desc:"澄んだ緑の宝石",
+        g:["#dcffe6","#8ef0ab","#3fc56d","#1f9a4d"],
+        border:"#188a42", hl:"rgba(255,255,255,.7)", glow:"none"
+    },
+    {
+        id:"gold", name:"ゴールド", rank:12,
+        desc:"金色にかがやく水滴",
+        g:["#fff7c9","#ffe36a","#f5b81f","#d98c00"],
+        border:"#b87400", hl:"rgba(255,255,255,.8)",
+        glow:"drop-shadow(0 0 10px rgba(255,200,40,.8))"
+    },
+    {
+        id:"galaxy", name:"ギャラクシー", rank:16,
+        desc:"星空を閉じ込めた紫",
+        g:["#c2a8ff","#7c50e3","#3e2b9e","#1a1252"],
+        border:"#0e0a33", hl:"rgba(255,255,255,.55)",
+        glow:"drop-shadow(0 0 12px rgba(150,100,255,.85))"
+    }
+];
+
+/* デバッグモードで追加されるSHOP商品。
+   通常商品の配列とは分けて管理し、リセット時に確実に消せるようにする。 */
+const BUILTIN_SHOP_LENGTH = shop.length;
+let customShopItems = [];
+
+function rebuildCustomShopItems(){
+    shop.splice(BUILTIN_SHOP_LENGTH);
+    customShopItems.forEach(item=>{
+        shop.push({
+            name:item.name,
+            gain:toBigIntSafe(item.gain),
+            cost:toBigIntSafe(item.cost)
+        });
+    });
+}
+
+
+/* =========================================
+   ルーレット
+========================================= */
+
+const roulette = [
+
+    {
+        m:0,
+        p:9,
+        type:"down"
+    },
+
+    {
+        m:0.001,
+        p:9,
+        type:"down"
+    },
+
+    {
+        m:0.01,
+        p:9,
+        type:"down"
+    },
+
+    {
+        m:0.5,
+        p:9,
+        type:"down"
+    },
+
+    {
+        m:0.75,
+        p:9,
+        type:"down"
+    },
+
+    {
+        m:1,
+        p:9,
+        type:"normal"
+    },
+
+    {
+        m:1.5,
+        p:9,
+        type:"up"
+    },
+
+    {
+        m:2,
+        p:9,
+        type:"up"
+    },
+
+    {
+        m:10,
+        p:9,
+        type:"up"
+    },
+
+    {
+        m:30,
+        p:9,
+        type:"up"
+    },
+
+    {
+        m:100,
+        p:9,
+        type:"up"
+    },
+
+    {
+        m:1000000,
+        p:1,
+        type:"jackpot"
+    }
+
+];
+
+
+/* =========================================
+   状態
+========================================= */
+
+let water = 0n;
+
+let power = 1n;
+
+/* デバッグで変更可能なゲーム設定 */
+let cardCooldownSeconds = 60;
+let rouletteCooldownUses = 5;
+let rouletteCooldownSeconds = 30;
+let rouletteSpinCount = 0;
+let rouletteCooldownUntil = 0;
+let rouletteCooldownTimer = null;
+let jackpotMultiplier = 1000;
+let rouletteNumberMultiplier = 1;
+let quizRewardMultiplier = 100;
+let quizTimeSeconds = 5;
+let quizCooldownSeconds = 20;
+let quizCooldownUntil = 0;
+let quizCooldownTimer = null;
+
+// ランク報酬をデバッグ設定が上書きしているか
+let rankSettingOverride = {
+    cooldown:false,
+    jackpot:false,
+    cardMax:false,
+    quiz:false,
+    clickPower:false
+};
+
+let selectedShopIndex = -1;
+
+let owned = [];
+
+/* オートアイテム */
+let autoOwned = [];          // 購入済みオートアイテムのid
+let autoRate = 0n;           // 毎秒の合計生成量
+let autoRemainder = 0n;      // 端数の持ち越し（ml×ms÷1000）
+let autoLastTick = Date.now();
+let shopTab = "click";       // "click" or "auto"
+let shopRows = [];           // 表示中の商品行（購入可否の更新用）
+let selectedSkin = "normal"; // 使用中のスキンid
+
+/* オンラインランキング */
+let maxWater = 0n;        // これまでの最高到達水量（ランキングの記録）
+let debugUsed = false;    // デバッグ機能を使ったデータは登録不可
+let playerId = "";        // 匿名ID
+let playerSecret = "";    // 自分の記録を更新・削除するための鍵
+let playerName = "";
+
+let cleared = false;
+
+let tenTrillionReached = false;
+
+let reached10Kei = false;
+let reached1000Kei = false;
+let reached10Gai = false;
+let reached1000Gai = false;
+let reached10Jo = false;
+let reached1000Jo = false;
+
+let currentRank = 0;
+
+let reachedMuryo = false;
+
+let displayWarningShown = false;
+
+let spinning = false;
+
+let wheelRotation = 0;
+let spinTimer = null;
+let spinChosen = null;
+let spinBetValue = 0n;
+let spinSkipped = false;
+
+let holding = false;
+
+let holdFrame = null;
+
+let holdStart = 0;
+
+let holdLast = 0;
+
+
+/* カード */
+
+let cardBetValue = "";
+
+let cardMultiplierValue = "";
+
+let cardActive = false;
+
+let cardResult = null;
+
+let cardCooldownUntil = 0;
+
+let cardCooldownTimer = null;
+let cardVisible = false;
+let cardMaxMultiplier = 10000n;
+
+let slotSpinning = false;
+let slotTimer = null;
+let slotBetValue = 0n;
+let quizAnswerValue = 0;
+let quizQuestionA = 0;
+let quizQuestionB = 0;
+let quizDeadline = 0;
+let quizTimerId = null;
+
+
+/* =========================================
+   DOM
+========================================= */
+
+const home =
+    document.getElementById("home");
+
+const shopScreen =
+    document.getElementById("shop");
+
+const gambleScreen =
+    document.getElementById("gamble");
+
+const cardGameScreen =
+    document.getElementById("cardGame");
+
+const slotGameScreen =
+    document.getElementById("slotGame");
+
+const rankScreen =
+    document.getElementById("rankScreen");
+
+const mainWater =
+    document.getElementById("mainWater");
+
+const mainPower =
+    document.getElementById("mainPower");
+
+const shopWater =
+    document.getElementById("shopWater");
+
+const gambleWater =
+    document.getElementById("gambleWater");
+
+const slotWater = document.getElementById("slotWater");
+const slotBet = document.getElementById("slotBet");
+const slotResult = document.getElementById("slotResult");
+const slotSpinButton = document.getElementById("slotSpinButton");
+const quizQuestion = document.getElementById("quizQuestion");
+const quizTimer = document.getElementById("quizTimer");
+const quizAnswer = document.getElementById("quizAnswer");
+const quizKeyboardQuestion = document.getElementById("quizKeyboardQuestion");
+
+const cardWater =
+    document.getElementById("cardWater");
+
+const rankWater =
+    document.getElementById("rankWater");
+
+const shopList =
+    document.getElementById("shopList");
+
+const mainAuto = document.getElementById("mainAuto");
+const autoSummary = document.getElementById("autoSummary");
+const shopTabClick = document.getElementById("shopTabClick");
+const shopTabAuto = document.getElementById("shopTabAuto");
+const skinScreen = document.getElementById("skinScreen");
+const skinList = document.getElementById("skinList");
+const skinCurrent = document.getElementById("skinCurrent");
+const onlineScreen = document.getElementById("onlineScreen");
+
+const rankList =
+    document.getElementById("rankList");
+
+const rankCurrentValue =
+    document.getElementById("rankCurrentValue");
+
+const wheel =
+    document.getElementById("wheel");
+
+const bet =
+    document.getElementById("bet");
+
+const result =
+    document.getElementById("result");
+
+const spinButton =
+    document.getElementById("spinButton");
+
+const customKeyboard =
+    document.getElementById("customKeyboard");
+
+const keyboardDisplay =
+    document.getElementById("keyboardDisplay");
+const allBet =
+    document.getElementById("allBet");
+const keyboardEnter =
+    document.getElementById("keyboardEnter");
+
+const backButton =
+    document.getElementById("backButton");
+
+const gamblingNav =
+    document.getElementById("gamblingNav");
+const gambleBackButton =
+    document.getElementById("gambleBackButton");
+const rouletteNavButton =
+    document.getElementById("rouletteNavButton");
+const cardNavButton =
+    document.getElementById("cardNavButton");
+const quizNavButton =
+    document.getElementById("quizNavButton");
+
+const resetButton =
+    document.getElementById("resetButton");
+
+const debugOverlay = document.getElementById("debugOverlay");
+const debugWater = document.getElementById("debugWater");
+const debugClickAmount = document.getElementById("debugClickAmount");
+const debugCardCooldown = document.getElementById("debugCardCooldown");
+const debugRouletteUses = document.getElementById("debugRouletteUses");
+const debugRouletteCooldown = document.getElementById("debugRouletteCooldown");
+const debugJackpot = document.getElementById("debugJackpot");
+const debugQuizMultiplier = document.getElementById("debugQuizMultiplier");
+const debugQuizTime = document.getElementById("debugQuizTime");
+const debugQuizCooldown = document.getElementById("debugQuizCooldown");
+const debugCardMax = document.getElementById("debugCardMax");
+const debugCustomName = document.getElementById("debugCustomName");
+const debugCustomGain = document.getElementById("debugCustomGain");
+const debugCustomCost = document.getElementById("debugCustomCost");
+const debugCustomAdd = document.getElementById("debugCustomAdd");
+const debugCustomList = document.getElementById("debugCustomList");
+const debugApply = document.getElementById("debugApply");
+const debugReset = document.getElementById("debugReset");
+const debugClose = document.getElementById("debugClose");
+
+const saveCodeGenerate = document.getElementById("saveCodeGenerate");
+const saveCodeLoad = document.getElementById("saveCodeLoad");
+const saveCodeCopy = document.getElementById("saveCodeCopy");
+const saveCodeText = document.getElementById("saveCodeText");
+const saveCodeStatus = document.getElementById("saveCodeStatus");
+
+const warningOverlay =
+    document.getElementById("warningOverlay");
+
+const warningText =
+    document.getElementById("warningText");
+
+const jackpotOverlay =
+    document.getElementById("jackpotOverlay");
+
+const jackpotText =
+    document.getElementById("jackpotText");
+const jackpotNotice =
+    document.getElementById("jackpotNotice");
+const rouletteCooldown =
+    document.getElementById("rouletteCooldown");
+
+const clearOverlay =
+    document.getElementById("clearOverlay");
+
+const clearNumber =
+    document.getElementById("clearNumber");
+
+const clearSub =
+    document.getElementById("clearSub");
+
+const tenTrillionOverlay =
+    document.getElementById("tenTrillionOverlay");
+
+const tenTrillionTitle =
+    document.getElementById("tenTrillionTitle");
+
+const tenTrillionNumber =
+    document.getElementById("tenTrillionNumber");
+
+const tenTrillionSub =
+    document.getElementById("tenTrillionSub");
+
+const dropHit =
+    document.getElementById("dropHit");
+
+const cardBet =
+    document.getElementById("cardBet");
+
+const cardMultiplier =
+    document.getElementById("cardMultiplier");
+
+const cardFee =
+    document.getElementById("cardFee");
+
+const card1 =
+    document.getElementById("card1");
+
+const card2 =
+    document.getElementById("card2");
+
+const cardFront1 =
+    document.getElementById("cardFront1");
+
+const cardFront2 =
+    document.getElementById("cardFront2");
+
+const cardStart =
+    document.getElementById("cardStart");
+
+const cardMessage =
+    document.getElementById("cardMessage");
+
+const cardCooldown =
+    document.getElementById("cardCooldown");
+
+const cardMultiplierLimit =
+    document.getElementById("cardMultiplierLimit");
+
+const cardArea =
+    document.getElementById("cardArea");
+
+const rankUpOverlay =
+    document.getElementById("rankUpOverlay");
+
+const rankUpNumber =
+    document.getElementById("rankUpNumber");
+
+const rankUpSub =
+    document.getElementById("rankUpSub");
+
+const muryoOverlay =
+    document.getElementById("muryoOverlay");
+
+const muryoNumber =
+    document.getElementById("muryoNumber");
+
+
+/* =========================================
+   BigInt
+========================================= */
+
+function toBigIntSafe(value){
+
+    try{
+
+        if(typeof value === "bigint")
+            return value;
+
+        return BigInt(value);
+
+    }catch{
+
+        return 0n;
+
+    }
+
+}
+
+
+/* =========================================
+   日本語大数
+========================================= */
+
+const LARGE_UNITS = [
+
+    "",
+    "万",
+    "億",
+    "兆",
+    "京",
+    "垓",
+    "秭",
+    "穣",
+    "溝",
+    "澗",
+    "正",
+    "載",
+    "極",
+    "恒河沙",
+    "阿僧祇",
+    "那由他",
+    "不可思議",
+    "無量大数"
+
+];
+
+
+function formatWater(value){
+
+    let n =
+        toBigIntSafe(value);
+
+    if(n < 0n)
+        n = 0n;
+
+    if(n === 0n)
+        return "0ml";
+
+    if(n >= DISPLAY_WARNING_WATER)
+        return "表示桁数超過";
+
+    if(n > MURYO){
+
+        if(n % MURYO === 0n){
+            return (n / MURYO).toString() +
+                "無量大数ml";
+        }
+
+        const digits = n.toString();
+        const exponent = digits.length - 1;
+        const base = 10n ** BigInt(exponent);
+        const integerPart = n / base;
+        const remainder = n % base;
+
+        const decimal =
+            remainder === 0n
+            ? ""
+            : "." + remainder.toString().slice(0,2);
+
+        return integerPart.toString() +
+            decimal +
+            "×10^" +
+            exponent +
+            "ml";
+    }
+
+    const groups = [];
+
+    while(n > 0n){
+
+        groups.push(
+            n % 10000n
+        );
+
+        n =
+            n / 10000n;
+
+    }
+
+    let output = "";
+
+    for(
+        let i = groups.length - 1;
+        i >= 0;
+        i--
+    ){
+
+        const group =
+            groups[i];
+
+        if(group === 0n)
+            continue;
+
+        output +=
+            group.toString() +
+            (LARGE_UNITS[i] || "");
+
+    }
+
+    return output + "ml";
+
+}
+
+
+/* =========================================
+   フォントサイズ
+========================================= */
+
+function getHighestUnitIndex(){
+
+    if(water < 10000n)
+        return 0;
+
+    let n = water;
+    let index = 0;
+
+    while(
+        n >= 10000n &&
+        index < 17
+    ){
+        n /= 10000n;
+        index++;
+    }
+
+    return index;
+}
+
+
+function updateWaterFontSize(){
+
+    const targets = [
+        mainWater,
+        shopWater,
+        gambleWater,
+        cardWater,
+        rankWater,
+        slotWater
+    ];
+
+    targets.forEach(el=>{
+        if(!el) return;
+
+        el.style.fontSize =
+            el === mainWater
+            ? "28px"
+            : "21px";
+
+        el.style.lineHeight = "1.15";
+        el.style.whiteSpace = "normal";
+    });
+
+}
+
+
+mainWater.dataset.baseSize = "28";
+shopWater.dataset.baseSize = "21";
+gambleWater.dataset.baseSize = "21";
+cardWater.dataset.baseSize = "21";
+rankWater.dataset.baseSize = "21";
+
+
+/* =========================================
+   保存
+========================================= */
+
+let saveTimer = null;
+
+function writeSave(){
+
+    localStorage.setItem(
+
+        "waterClicker",
+
+        JSON.stringify({
+
+            water:
+                water.toString(),
+
+            power:
+                power.toString(),
+
+            owned,
+            autoOwned,
+            selectedSkin,
+            maxWater:maxWater.toString(),
+            debugUsed,
+            playerId,
+            playerSecret,
+            playerName,
+
+            cleared,
+
+            tenTrillionReached,
+
+            reached10Kei,
+            reached1000Kei,
+            reached10Gai,
+            reached1000Gai,
+            reached10Jo,
+            reached1000Jo,
+
+            currentRank,
+
+            reachedMuryo,
+
+            displayWarningShown,
+
+            cardCooldownUntil,
+            cardMaxMultiplier: cardMaxMultiplier.toString(),
+            cardVisible,
+
+            cardCooldownSeconds,
+            rouletteCooldownUses,
+            rouletteCooldownSeconds,
+            rouletteSpinCount,
+            rouletteCooldownUntil,
+            jackpotMultiplier,
+            rouletteNumberMultiplier,
+            quizRewardMultiplier,
+            quizTimeSeconds,
+            quizCooldownSeconds,
+            quizCooldownUntil,
+
+            selectedShopIndex,
+            rankSettingOverride,
+            customShopItems:customShopItems.map(item=>({
+                name:String(item.name),
+                gain:toBigIntSafe(item.gain).toString(),
+                cost:toBigIntSafe(item.cost).toString()
+            }))
+
+        })
+
+    );
+
+}
+
+function save(){
+
+    if(saveTimer !== null)
+        clearTimeout(saveTimer);
+
+    saveTimer = setTimeout(function(){
+        saveTimer = null;
+        writeSave();
+    }, 250);
+
+}
+
+function flushSave(){
+
+    if(saveTimer !== null){
+        clearTimeout(saveTimer);
+        saveTimer = null;
+    }
+
+    writeSave();
+
+}
+
+
+/* =========================================
+   読み込み
+========================================= */
+
+function load(){
+
+    try{
+
+        const data =
+            JSON.parse(
+                localStorage.getItem(
+                    "waterClicker"
+                )
+            );
+
+        if(!data)
+            return;
+
+        water =
+            toBigIntSafe(
+                data.water || "0"
+            );
+
+        power =
+            toBigIntSafe(
+                data.power || "1"
+            );
+
+        selectedShopIndex =
+            Number.isInteger(data.selectedShopIndex)
+            ? data.selectedShopIndex
+            : -1;
+
+        customShopItems =
+            Array.isArray(data.customShopItems)
+            ? data.customShopItems
+                .filter(item=>item && typeof item === "object")
+                .map(item=>({
+                    name:String(item.name || "カスタム商品"),
+                    gain:toBigIntSafe(item.gain),
+                    cost:toBigIntSafe(item.cost)
+                }))
+                .filter(item=>item.name.trim() && item.gain > 0n && item.cost > 0n)
+            : [];
+        rebuildCustomShopItems();
+
+        if(data.rankSettingOverride && typeof data.rankSettingOverride === "object")
+            rankSettingOverride = {
+                cooldown:Boolean(data.rankSettingOverride.cooldown),
+                jackpot:Boolean(data.rankSettingOverride.jackpot),
+                cardMax:Boolean(data.rankSettingOverride.cardMax),
+                quiz:Boolean(data.rankSettingOverride.quiz),
+                clickPower:Boolean(data.rankSettingOverride.clickPower)
+            };
+
+        owned =
+            Array.isArray(data.owned)
+            ? data.owned
+            : [];
+
+        autoOwned =
+            Array.isArray(data.autoOwned)
+            ? Array.from(new Set(data.autoOwned)).filter(
+                id => autoShop.some(a => a.id === id)
+              )
+            : [];
+        recalcAutoRate();
+
+        selectedSkin =
+            (typeof data.selectedSkin === "string" &&
+             SKINS.some(s => s.id === data.selectedSkin))
+            ? data.selectedSkin
+            : "normal";
+
+        maxWater = toBigIntSafe(data.maxWater || "0");
+        if(maxWater < water)
+            maxWater = water;
+        if(maxWater > MAX_WATER)
+            maxWater = MAX_WATER;
+
+        debugUsed = Boolean(data.debugUsed);
+
+        playerId =
+            (typeof data.playerId === "string" &&
+             /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/.test(data.playerId))
+            ? data.playerId
+            : "";
+        playerSecret =
+            (typeof data.playerSecret === "string" &&
+             /^[0-9a-f]{32}$/.test(data.playerSecret))
+            ? data.playerSecret
+            : "";
+        if(!playerId || !playerSecret){
+            playerId = "";
+            playerSecret = "";
+        }
+        playerName =
+            typeof data.playerName === "string"
+            ? Array.from(data.playerName).slice(0,12).join("")
+            : "";
+
+        cleared =
+            Boolean(data.cleared);
+
+        tenTrillionReached =
+            Boolean(
+                data.tenTrillionReached
+            );
+
+        reached10Kei =
+            Boolean(data.reached10Kei);
+
+        reached1000Kei =
+            Boolean(data.reached1000Kei);
+
+        reached10Gai =
+            Boolean(data.reached10Gai);
+
+        reached1000Gai =
+            Boolean(data.reached1000Gai);
+
+        reached10Jo =
+            Boolean(data.reached10Jo);
+
+        reached1000Jo =
+            Boolean(data.reached1000Jo);
+
+        currentRank =
+            Number(
+                data.currentRank || 0
+            );
+
+        reachedMuryo =
+            Boolean(
+                data.reachedMuryo
+            );
+
+        displayWarningShown =
+            Boolean(
+                data.displayWarningShown
+            );
+
+        cardCooldownUntil =
+            Number(
+                data.cardCooldownUntil || 0
+            );
+
+        cardMaxMultiplier =
+            toBigIntSafe(
+                data.cardMaxMultiplier || "10000"
+            );
+
+        if(cardMaxMultiplier < 1n)
+            cardMaxMultiplier = 10000n;
+
+        cardVisible =
+            Boolean(data.cardVisible);
+
+        cardCooldownSeconds = Number(data.cardCooldownSeconds ?? 60);
+        rouletteCooldownUses = Number(data.rouletteCooldownUses ?? 5);
+        rouletteCooldownSeconds = Number(data.rouletteCooldownSeconds ?? 30);
+        rouletteSpinCount = Number(data.rouletteSpinCount ?? 0);
+        rouletteCooldownUntil = Number(data.rouletteCooldownUntil ?? 0);
+        jackpotMultiplier = Number(data.jackpotMultiplier ?? 1000);
+        rouletteNumberMultiplier = Number(data.rouletteNumberMultiplier ?? 1);
+        quizRewardMultiplier = Number(data.quizRewardMultiplier ?? 100);
+        quizTimeSeconds = Number(data.quizTimeSeconds ?? 5);
+        quizCooldownSeconds = Number(data.quizCooldownSeconds ?? 20);
+        quizCooldownUntil = Number(data.quizCooldownUntil ?? 0);
+
+        if(!Number.isFinite(cardCooldownSeconds) || cardCooldownSeconds < 0)
+            cardCooldownSeconds = 20;
+        if(!Number.isFinite(jackpotMultiplier) || jackpotMultiplier < 1)
+            jackpotMultiplier = 1000000;
+        if(!Number.isFinite(quizRewardMultiplier) || quizRewardMultiplier < 1)
+            quizRewardMultiplier = 100;
+        if(!Number.isFinite(quizTimeSeconds) || quizTimeSeconds <= 0)
+            quizTimeSeconds = 5;
+        if(!Number.isFinite(rouletteCooldownUses) || rouletteCooldownUses < 1)
+            rouletteCooldownUses = 5;
+        if(!Number.isFinite(rouletteCooldownSeconds) || rouletteCooldownSeconds < 0)
+            rouletteCooldownSeconds = 30;
+        if(!Number.isFinite(rouletteSpinCount) || rouletteSpinCount < 0)
+            rouletteSpinCount = 0;
+        if(!Number.isFinite(rouletteCooldownUntil) || rouletteCooldownUntil < 0)
+            rouletteCooldownUntil = 0;
+        if(!Number.isFinite(quizCooldownSeconds) || quizCooldownSeconds < 0)
+            quizCooldownSeconds = 20;
+        if(!Number.isFinite(quizCooldownUntil) || quizCooldownUntil < 0)
+            quizCooldownUntil = 0;
+
+        const jackpotItem = roulette.find(item => item.type === "jackpot");
+        if(jackpotItem) jackpotItem.m = jackpotMultiplier;
+
+
+        if(water > MAX_WATER)
+            water = MAX_WATER;
+
+        /*
+            旧バージョンの9999無量大数制限で
+            保存された値を切り捨てない。
+        */
+
+        calculateRank();
+
+    }catch{
+
+        water = 0n;
+        power = 1n;
+        owned = [];
+        autoOwned = [];
+        autoRate = 0n;
+        selectedSkin = "normal";
+        maxWater = 0n;
+        debugUsed = false;
+        customShopItems = [];
+        rebuildCustomShopItems();
+        cleared = false;
+        tenTrillionReached = false;
+
+        reached10Kei = false;
+        reached1000Kei = false;
+        reached10Gai = false;
+        reached1000Gai = false;
+        reached10Jo = false;
+        reached1000Jo = false;
+
+        currentRank = 0;
+        reachedMuryo = false;
+        displayWarningShown = false;
+
+        cardCooldownUntil = 0;
+        cardMaxMultiplier = 10000n;
+        cardVisible = false;
+
+    }
+
+}
+
+
+/* =========================================
+   表示桁数警告
+========================================= */
+
+function checkDisplayWarning(before){
+
+    if(
+        displayWarningShown
+    )
+        return;
+
+    if(
+        before < DISPLAY_WARNING_WATER &&
+        water >= DISPLAY_WARNING_WATER
+    ){
+
+        displayWarningShown = true;
+
+        save();
+
+        warningText.innerHTML =
+            "これ以上は桁数が表示されなくなります。<br><br>" +
+            "内部のBigInt計算は継続されます。<br>" +
+            "対応上限：10<sup>1000</sup>";
+
+        warningOverlay.classList.add(
+            "show"
+        );
+
+    }
+
+}
+
+
+/* =========================================
+   演出
+========================================= */
+
+function screenFlash(){
+
+    const flash =
+        document.createElement("div");
+
+    flash.className =
+        "flash";
+
+    document.body.appendChild(
+        flash
+    );
+
+    setTimeout(
+        ()=>flash.remove(),
+        700
+    );
+
+}
+
+
+function createClearRings(count){
+
+    for(
+        let i=0;
+        i<count;
+        i++
+    ){
+
+        setTimeout(()=>{
+
+            const ring =
+                document.createElement(
+                    "div"
+                );
+
+            ring.className =
+                "clear-ring";
+
+            document.body.appendChild(
+                ring
+            );
+
+            setTimeout(
+                ()=>ring.remove(),
+                1300
+            );
+
+        },i*180);
+
+    }
+
+}
+
+
+function createConfetti(count){
+
+    const symbols = [
+        "🎉",
+        "✨",
+        "⭐",
+        "💧",
+        "🎊"
+    ];
+
+    for(
+        let i=0;
+        i<count;
+        i++
+    ){
+
+        const item =
+            document.createElement(
+                "div"
+            );
+
+        item.className =
+            "confetti";
+
+        item.textContent =
+            symbols[
+                Math.floor(
+                    Math.random() *
+                    symbols.length
+                )
+            ];
+
+        item.style.left =
+            Math.random() *
+            100 +
+            "vw";
+
+        item.style.animationDelay =
+            Math.random() *
+            1.2 +
+            "s";
+
+        item.style.fontSize =
+            (
+                16 +
+                Math.random() *
+                22
+            ) +
+            "px";
+
+        document.body.appendChild(
+            item
+        );
+
+        setTimeout(
+            ()=>item.remove(),
+            4000
+        );
+
+    }
+
+}
+
+
+function createGoldParticles(count){
+
+    for(
+        let i=0;
+        i<count;
+        i++
+    ){
+
+        const item =
+            document.createElement(
+                "div"
+            );
+
+        item.className =
+            "gold-particle";
+
+        item.textContent =
+            [
+                "💎",
+                "✨",
+                "⭐",
+                "💰",
+                "👑"
+            ][
+                Math.floor(
+                    Math.random()*5
+                )
+            ];
+
+        item.style.left =
+            Math.random() *
+            100 +
+            "vw";
+
+        item.style.top =
+            (
+                -10 -
+                Math.random()*20
+            ) +
+            "vh";
+
+        item.style.setProperty(
+            "--x",
+            (
+                (Math.random()-.5)*300
+            ) +
+            "px"
+        );
+
+        item.style.animationDelay =
+            Math.random()*1.5 +
+            "s";
+
+        document.body.appendChild(
+            item
+        );
+
+        setTimeout(
+            ()=>item.remove(),
+            5000
+        );
+
+    }
+
+}
+
+
+/* =========================================
+   無量大数演出
+========================================= */
+
+function createMuryoParticles(){
+
+    for(
+        let i=0;
+        i<180;
+        i++
+    ){
+
+        const p =
+            document.createElement(
+                "div"
+            );
+
+        p.className =
+            "muryo-particle";
+
+        p.textContent =
+            [
+                "💧",
+                "✨",
+                "⭐",
+                "💎",
+                "🌟",
+                "🌌"
+            ][
+                Math.floor(
+                    Math.random()*6
+                )
+            ];
+
+        p.style.left =
+            "50vw";
+
+        p.style.top =
+            "50vh";
+
+        p.style.setProperty(
+            "--mx",
+            (
+                (Math.random()-.5)*120 +
+                "vw"
+            )
+        );
+
+        p.style.setProperty(
+            "--my",
+            (
+                (Math.random()-.5)*120 +
+                "vh"
+            )
+        );
+
+        p.style.animationDelay =
+            Math.random()*1.5 +
+            "s";
+
+        document.body.appendChild(p);
+
+        setTimeout(
+            ()=>p.remove(),
+            5500
+        );
+
+    }
+
+}
+
+
+function createMuryoStars(){
+
+    for(
+        let i=0;
+        i<120;
+        i++
+    ){
+
+        const s =
+            document.createElement(
+                "div"
+            );
+
+        s.className =
+            "muryo-star";
+
+        s.textContent =
+            "✦";
+
+        s.style.left =
+            Math.random()*100 +
+            "vw";
+
+        s.style.top =
+            Math.random()*100 +
+            "vh";
+
+        s.style.animationDelay =
+            Math.random()*2 +
+            "s";
+
+        document.body.appendChild(s);
+
+        setTimeout(
+            ()=>s.remove(),
+            5000
+        );
+
+    }
+
+}
+
+
+function showMuryoCelebration(){
+
+    /*
+        旧バージョン用の演出。
+        現在は10^5010まで上限が延長されたため、
+        自動発動させない。
+    */
+
+    return;
+
+}
+
+
+/* =========================================
+   100億
+========================================= */
+
+function showClearCelebration(){
+
+    if(cleared)
+        return;
+
+    cleared = true;
+
+    save();
+
+    screenFlash();
+
+    createClearRings(14);
+    createConfetti(300);
+    createGoldParticles(260);
+    createStars(220);
+    createMuryoStars();
+    setTimeout(()=>screenFlash(), 220);
+    setTimeout(()=>screenFlash(), 520);
+
+    clearNumber.textContent =
+        "9999無量大数達成！";
+
+    clearSub.innerHTML =
+        "ゲームクリアおめでとう！<br>" +
+        "クリア後もさらに水を増やせます。";
+
+    clearOverlay.classList.add(
+        "show"
+    );
+
+}
+
+
+/* =========================================
+   10兆
+========================================= */
+
+function showTenTrillionCelebration(){
+
+    if(tenTrillionReached)
+        return;
+
+    tenTrillionReached = true;
+
+    save();
+
+    screenFlash();
+
+    createClearRings(8);
+
+    createConfetti(100);
+
+    createGoldParticles(80);
+
+    tenTrillionTitle.textContent =
+        "💎 10兆ml達成！ 💎";
+
+    tenTrillionNumber.textContent =
+        formatWater(TEN_TRILLION);
+
+    tenTrillionSub.innerHTML =
+        "桁がひとつ上がった。<br>" +
+        "WATER CLICKERの世界が変わる――。";
+
+    tenTrillionOverlay.classList.add(
+        "show"
+    );
+
+}
+
+
+/* =========================================
+   追加クリア
+========================================= */
+
+function showMilestone(title,message){
+
+    screenFlash();
+
+    createClearRings(5);
+
+    createConfetti(80);
+
+    const overlay =
+        document.createElement(
+            "div"
+        );
+
+    overlay.className =
+        "overlay show";
+
+    const box =
+        document.createElement(
+            "div"
+        );
+
+    box.className =
+        "clear-box";
+
+    const titleElement =
+        document.createElement(
+            "div"
+        );
+
+    titleElement.className =
+        "clear-title";
+
+    titleElement.textContent =
+        "🎉 " + title + " 🎉";
+
+    const numberElement =
+        document.createElement(
+            "div"
+        );
+
+    numberElement.className =
+        "clear-number";
+
+    numberElement.textContent =
+        message;
+
+    const sub =
+        document.createElement(
+            "div"
+        );
+
+    sub.className =
+        "clear-sub";
+
+    sub.innerHTML =
+        "さらに上の桁を目指そう！";
+
+    const button =
+        document.createElement(
+            "button"
+        );
+
+    button.className =
+        "overlay-button";
+
+    button.type =
+        "button";
+
+    button.textContent =
+        "OK";
+
+    box.appendChild(titleElement);
+    box.appendChild(numberElement);
+    box.appendChild(sub);
+    box.appendChild(button);
+
+    overlay.appendChild(box);
+
+    document.body.appendChild(overlay);
+
+    button.addEventListener(
+        "click",
+        ()=>{
+            overlay.remove();
+        }
+    );
+
+}
+
+
+/* =========================================
+   RANK
+========================================= */
+
+function getRankFromWater(){
+
+    let rank = 0;
+
+    for(
+        let i=0;
+        i<RANKS.length;
+        i++
+    ){
+
+        if(
+            water >=
+            RANKS[i].value
+        ){
+
+            rank = i + 1;
+
+        }else{
+
+            break;
+
+        }
+
+    }
+
+    return rank;
+
+}
+
+
+function updateCardMultiplierLabel(){
+    if(cardMultiplierLimit)
+        cardMultiplierLimit.textContent =
+            "倍率：10倍 ～ " + formatWater(cardMaxMultiplier).replace("ml","") + "倍";
+}
+
+function getRankClickPowerMultiplier(){
+    if(currentRank >= 16) return 100n;
+    if(currentRank >= 14) return 10n;
+    return 1n;
+}
+
+function getShopGain(item){
+    return item.gain * getRankClickPowerMultiplier();
+}
+
+function applySelectedShopPower(){
+    if(rankSettingOverride.clickPower) return;
+    if(selectedShopIndex >= 0 && shop[selectedShopIndex]){
+        power = getShopGain(shop[selectedShopIndex]);
+    }
+}
+
+function updateRouletteJackpotFromRank(force = false){
+
+    // デバッグでJACKPOT倍率を固定している場合は、その値を優先する。
+    if(force || !rankSettingOverride.jackpot){
+        if(currentRank >= 17)
+            jackpotMultiplier = 100000000;
+        else if(currentRank >= 10)
+            jackpotMultiplier = 10000000;
+        else if(currentRank >= 9)
+            jackpotMultiplier = 1000000;
+        else if(currentRank >= 7)
+            jackpotMultiplier = 100000;
+        else if(currentRank >= 5)
+            jackpotMultiplier = 10000;
+        else
+            jackpotMultiplier = 1000;
+    }
+
+    const jackpotItem = roulette.find(item => item.type === "jackpot");
+    if(jackpotItem)
+        jackpotItem.m = jackpotMultiplier;
+
+    if(jackpotNotice)
+        jackpotNotice.textContent =
+            "JACKPOT：×" + (jackpotMultiplier * rouletteNumberMultiplier);
+}
+
+
+function applyRankUnlockSettings(){
+
+    if(!rankSettingOverride.cooldown){
+        if(currentRank >= 11)
+            cardCooldownSeconds = 20;
+        else if(currentRank >= 6)
+            cardCooldownSeconds = 30;
+        else
+            cardCooldownSeconds = 60;
+    }
+
+    if(!rankSettingOverride.quiz){
+        if(currentRank >= 18)
+            quizRewardMultiplier = 10000;
+        else if(currentRank >= 12)
+            quizRewardMultiplier = 1000;
+        else
+            quizRewardMultiplier = 100;
+    }
+
+    if(!rankSettingOverride.cardMax){
+        if(currentRank >= 13)
+            cardMaxMultiplier = 1000000000n;
+        else if(currentRank >= 7)
+            cardMaxMultiplier = 100000000n;
+        else
+            cardMaxMultiplier = 10000n;
+    }
+
+    // RANK 15: ルーレットの全ての倍率を実際の報酬も含めて10倍。
+    rouletteNumberMultiplier = currentRank >= 15 ? 10 : 1;
+
+    updateRouletteJackpotFromRank();
+
+    if(!rankSettingOverride.clickPower){
+        applySelectedShopPower();
+    }
+
+    updateCardMultiplierLabel();
+}
+
+function getRankUnlockText(rank){
+    const unlocks = {
+        1:"ショップ解放",
+        2:"ギャンブル解放（ルーレット）",
+        3:"カードゲーム解放",
+        4:"九九の計算チャレンジ解放",
+        5:"ルーレット JACKPOT が×1万倍に上昇",
+        6:"カードのクールタイムが30秒に短縮",
+        7:"カード最大倍率が1億倍に上昇 ＋ ルーレット JACKPOT が×10万倍に上昇",
+        8:"新規解放なし",
+        9:"ルーレット JACKPOT が×100万倍に上昇",
+        10:"ルーレット JACKPOT が×1000万倍に上昇",
+        11:"カードのクールタイムが20秒に短縮",
+        12:"クイズの倍率が1000倍に上昇",
+        13:"カード最大倍率が10億倍に上昇",
+        14:"ショップの全アイテムの1クリック量が10倍",
+        15:"ルーレットの全ての倍率が10倍",
+        16:"ショップの全アイテムの1クリック量がさらに10倍（初期の100倍）",
+        17:"ルーレット JACKPOT が×1億倍に上昇",
+        18:"クイズの倍率が1万倍に上昇"
+    };
+    let text = unlocks[rank] || "";
+
+    const skinTexts = SKINS
+        .filter(s => s.rank === rank)
+        .map(s => "スキン「" + s.name + "」解放");
+
+    if(skinTexts.length){
+        text = (text && text !== "新規解放なし")
+            ? text + " ＋ " + skinTexts.join(" ＋ ")
+            : skinTexts.join(" ＋ ");
+    }
+
+    return text || "新規解放なし";
+}
+
+function calculateRank(){
+
+    const oldRank = currentRank;
+    const newRank = getRankFromWater();
+
+    currentRank = Math.max(currentRank,newRank);
+    applyRankUnlockSettings();
+
+    if(currentRank > oldRank){
+
+        // ランクアップ直後にJACKPOT倍率を確実に再同期する。
+        updateRouletteJackpotFromRank(true);
+
+        if(currentRank > 0)
+            showRankUp(currentRank);
+
+        buildRankList();
+        buildShop();
+        buildWheel();
+        buildSkinScreen();
+    }
+
+    // 起動時のRANK 0でも解放状態を必ず反映
+    updateFeatureLocks();
+
+}
+
+
+
+function showRankUp(rank){
+
+    const data = RANKS[rank - 1];
+    if(!data || !rankUpOverlay) return;
+
+    // すでに表示中でも内容を確実に更新し、通知を消さない。
+    rankUpNumber.textContent = "RANK " + rank;
+    rankUpSub.innerHTML =
+        "到達：" + formatWater(data.value) +
+        "<br>" +
+        "解放された要素：<br>" +
+        getRankUnlockText(rank);
+
+    rankUpOverlay.classList.add("show");
+
+    // RANK 1だけは最初の到達なので、質素な演出にする。
+    if(rank !== 1){
+        screenFlash();
+        createClearRings(6);
+        createConfetti(90);
+        createGoldParticles(60);
+    }
+
+}
+
+
+function buildRankList(){
+
+    rankList.innerHTML =
+        "";
+
+    RANKS.forEach(
+        (rank,index)=>{
+
+            const done =
+                water >= rank.value;
+
+            if(index >= 18 && !done)
+                return;
+
+            const box =
+                document.createElement(
+                    "div"
+                );
+
+            box.className =
+                "rank-item" +
+                (
+                    done
+                    ? " done"
+                    : ""
+                );
+
+            const number =
+                document.createElement(
+                    "div"
+                );
+
+            number.className =
+                "rank-number";
+
+            number.textContent =
+                rank.name;
+
+            const condition =
+                document.createElement(
+                    "div"
+                );
+
+            condition.className =
+                "rank-condition";
+
+            condition.innerHTML =
+                "到達水量：" +
+                formatWater(rank.value) +
+                "<br>" +
+                "解放：" +
+                getRankUnlockText(index + 1);
+
+            const status =
+                document.createElement(
+                    "div"
+                );
+
+            status.className =
+                "rank-status";
+
+            status.textContent =
+                done
+                ? "✓"
+                : "🔒";
+
+            box.appendChild(number);
+            box.appendChild(condition);
+            box.appendChild(status);
+
+            rankList.appendChild(box);
+
+        }
+    );
+
+    rankCurrentValue.textContent =
+        currentRank > 0
+        ? "RANK " + currentRank
+        : "RANK 0";
+
+    rankWater.textContent =
+        "所持水：" +
+        formatWater(water);
+
+}
+
+
+/* =========================================
+   マイルストーン
+========================================= */
+
+function checkMilestones(before){
+
+    if(
+        !reached10Kei &&
+        before < TEN_KEI &&
+        water >= TEN_KEI
+    ){
+
+        reached10Kei = true;
+
+        showMilestone(
+            "10京ml達成！",
+            "10京mlに到達しました！"
+        );
+
+    }
+
+    if(
+        !reached1000Kei &&
+        before < THOUSAND_KEI &&
+        water >= THOUSAND_KEI
+    ){
+
+        reached1000Kei = true;
+
+        showMilestone(
+            "1000京ml達成！",
+            "1000京mlに到達しました！"
+        );
+
+    }
+
+    if(
+        !reached10Gai &&
+        before < TEN_GAI &&
+        water >= TEN_GAI
+    ){
+
+        reached10Gai = true;
+
+        showMilestone(
+            "10垓ml達成！",
+            "10垓mlに到達しました！"
+        );
+
+    }
+
+    if(
+        !reached1000Gai &&
+        before < THOUSAND_GAI &&
+        water >= THOUSAND_GAI
+    ){
+
+        reached1000Gai = true;
+
+        showMilestone(
+            "1000垓ml達成！",
+            "1000垓mlに到達しました！"
+        );
+
+    }
+
+    if(
+        !reached10Jo &&
+        before < TEN_JO &&
+        water >= TEN_JO
+    ){
+
+        reached10Jo = true;
+
+        showMilestone(
+            "10穣ml達成！",
+            "10穣mlに到達しました！"
+        );
+
+    }
+
+    if(
+        !reached1000Jo &&
+        before < THOUSAND_JO &&
+        water >= THOUSAND_JO
+    ){
+
+        reached1000Jo = true;
+
+        showMilestone(
+            "1000穣ml達成！",
+            "1000穣mlに到達しました！"
+        );
+
+    }
+
+}
+
+
+/* =========================================
+   上限
+========================================= */
+
+function exceedMax(){
+
+    water =
+        MAX_WATER;
+
+    update();
+
+    save();
+
+    warningText.innerHTML =
+        "対応上限の10<sup>1000</sup>に到達しました。<br><br>" +
+        "これ以上は水量を増やせません。";
+
+    warningOverlay.classList.add(
+        "show"
+    );
+
+}
+
+
+/* =========================================
+   水を増やす
+========================================= */
+
+function addWater(amount){
+
+    amount =
+        toBigIntSafe(amount);
+
+    if(amount <= 0n)
+        return;
+
+    if(
+        water >
+        MAX_WATER - amount
+    ){
+
+        water =
+            MAX_WATER;
+
+        update();
+
+        save();
+
+        exceedMax();
+
+        return;
+
+    }
+
+    const before =
+        water;
+
+    water +=
+        amount;
+
+    update();
+
+    save();
+
+    if(
+        before < CLEAR_WATER &&
+        water >= CLEAR_WATER
+    ){
+
+        showClearCelebration();
+
+    }
+
+    if(
+        before < TEN_TRILLION &&
+        water >= TEN_TRILLION
+    ){
+
+        showTenTrillionCelebration();
+
+    }
+
+    checkMilestones(before);
+
+    checkDisplayWarning(before);
+
+    calculateRank();
+
+}
+
+
+/* =========================================
+   水を減らす
+========================================= */
+
+function subtractWater(amount){
+
+    amount =
+        toBigIntSafe(amount);
+
+    if(amount <= 0n)
+        return true;
+
+    if(water < amount)
+        return false;
+
+    water -= amount;
+
+    update();
+
+    save();
+
+    return true;
+
+}
+
+
+/* =========================================
+   更新
+========================================= */
+
+function update(){
+
+    if(water > maxWater)
+        maxWater = water;
+
+    mainWater.textContent = formatWater(water);
+    mainPower.textContent = "1クリック：" + formatWater(power);
+
+    if(autoRate > 0n){
+        mainAuto.textContent = "自動：毎秒 " + formatWater(autoRate);
+        mainAuto.classList.remove("hidden");
+    }else{
+        mainAuto.classList.add("hidden");
+    }
+
+    shopWater.textContent = "所持水：" + formatWater(water);
+    gambleWater.textContent = "所持水：" + formatWater(water);
+    slotWater.textContent = "所持水：" + formatWater(water);
+    cardWater.textContent = "所持水：" + formatWater(water);
+    rankWater.textContent = "所持水：" + formatWater(water);
+
+    updateKeyboardDisplay();
+
+    // クリック中にCSSやランク一覧を再構築しない。
+    updateCardCooldown();
+    updateRouletteCooldown();
+    updateQuizCooldown();
+
+}
+
+
+
+/* =========================================
+   星
+========================================= */
+
+function createStars(count){
+
+    for(
+        let i=0;
+        i<count;
+        i++
+    ){
+
+        const star =
+            document.createElement(
+                "div"
+            );
+
+        star.className =
+            "star";
+
+        star.textContent =
+            "";
+
+        star.style.left =
+            Math.random()*100 +
+            "vw";
+
+        star.style.top =
+            (
+                -10 -
+                Math.random()*20
+            ) +
+            "px";
+
+        star.style.animationDelay =
+            Math.random()*.7 +
+            "s";
+
+        document.body.appendChild(
+            star
+        );
+
+        setTimeout(
+            ()=>star.remove(),
+            2600
+        );
+
+    }
+
+}
+
+
+/* =========================================
+   画面切り替え
+========================================= */
+
+function showScreen(name){
+
+    requestFullscreen();
+
+    stopHold();
+
+    home.classList.add("hidden");
+    shopScreen.classList.add("hidden");
+    gambleScreen.classList.add("hidden");
+    cardGameScreen.classList.add("hidden");
+    slotGameScreen.classList.add("hidden");
+    rankScreen.classList.add("hidden");
+    skinScreen.classList.add("hidden");
+    onlineScreen.classList.add("hidden");
+
+    closeKeyboard();
+
+    if(name === "home")
+        home.classList.remove("hidden");
+
+    if(name === "shop")
+        shopScreen.classList.remove("hidden");
+
+    if(name === "gamble")
+        gambleScreen.classList.remove("hidden");
+
+    if(name === "card")
+        cardGameScreen.classList.remove("hidden");
+
+    if(name === "slot")
+        slotGameScreen.classList.remove("hidden");
+
+    if(name === "rank")
+        rankScreen.classList.remove("hidden");
+
+    if(name === "skin")
+        skinScreen.classList.remove("hidden");
+
+    if(name === "online")
+        onlineScreen.classList.remove("hidden");
+
+    updateBackButton();
+
+}
+
+
+/* =========================================
+   戻る
+========================================= */
+
+function updateBackButton(){
+
+    const shopVisible = !shopScreen.classList.contains("hidden");
+    const gambleVisible = !gambleScreen.classList.contains("hidden");
+    const cardVisibleScreen = !cardGameScreen.classList.contains("hidden");
+    const quizVisible = !slotGameScreen.classList.contains("hidden");
+    const rankVisible = !rankScreen.classList.contains("hidden");
+
+    const shopBackButton =
+        document.getElementById("shopBackButton");
+
+    const rankBackButton =
+        document.getElementById("rankBackButton");
+
+    // SHOPとRANKそれぞれの画面だけ、左上固定ボタンを表示
+    shopBackButton.style.display =
+        shopVisible ? "block" : "none";
+    shopBackButton.style.position = "fixed";
+    shopBackButton.style.top = "10px";
+    shopBackButton.style.left = "10px";
+
+    rankBackButton.style.display =
+        rankVisible ? "block" : "none";
+    rankBackButton.style.position = "fixed";
+    rankBackButton.style.top = "10px";
+    rankBackButton.style.left = "10px";
+
+    const skinVisible = !skinScreen.classList.contains("hidden");
+    const skinBackButton = document.getElementById("skinBackButton");
+
+    skinBackButton.style.display =
+        skinVisible ? "block" : "none";
+    skinBackButton.style.position = "fixed";
+    skinBackButton.style.top = "10px";
+    skinBackButton.style.left = "10px";
+
+    const onlineVisible = !onlineScreen.classList.contains("hidden");
+    const onlineBackButton = document.getElementById("onlineBackButton");
+
+    onlineBackButton.style.display =
+        onlineVisible ? "block" : "none";
+    onlineBackButton.style.position = "fixed";
+    onlineBackButton.style.top = "10px";
+    onlineBackButton.style.left = "10px";
+
+    const nonHome = shopVisible || gambleVisible || cardVisibleScreen || quizVisible || rankVisible || skinVisible || onlineVisible;
+
+    backButton.style.display = nonHome ? "none" : "none";
+    gamblingNav.style.display = (gambleVisible || cardVisibleScreen || quizVisible) ? "grid" : "none";
+
+    if(gamblingNav.style.display !== "none"){
+        cardNavButton.disabled = currentRank < 3;
+        quizNavButton.disabled = currentRank < 4;
+        rouletteNavButton.disabled = currentRank < 2;
+    }
+}
+
+
+function updateFeatureLocks(){
+
+    const shopButton =
+        document.getElementById("shopOpen");
+
+    const gambleButton =
+        document.getElementById("gambleOpen");
+
+    shopButton.disabled =
+        currentRank < 1;
+
+    gambleButton.disabled =
+        currentRank < 2;
+
+    updateBackButton();
+
+}
+
+
+/* =========================================
+   HOME
+========================================= */
+
+document
+.getElementById("shopOpen")
+.addEventListener(
+    "click",
+    function(e){
+
+        e.preventDefault();
+        e.stopPropagation();
+
+        if(currentRank < 1)
+            return;
+
+        buildShop();
+
+        showScreen("shop");
+
+    }
+);
+
+
+document
+.getElementById("shopBackButton")
+.addEventListener(
+    "click",
+    function(e){
+
+        e.preventDefault();
+        e.stopPropagation();
+
+        showScreen("home");
+
+    }
+);
+
+
+document
+.getElementById("gambleOpen")
+.addEventListener(
+    "click",
+    function(e){
+
+        e.preventDefault();
+        e.stopPropagation();
+
+        if(currentRank < 2)
+            return;
+
+        showScreen("gamble");
+
+    }
+);
+
+
+document
+.getElementById("rankOpen")
+.addEventListener(
+    "click",
+    function(e){
+
+        e.preventDefault();
+        e.stopPropagation();
+
+        buildRankList();
+
+        showScreen("rank");
+
+    }
+);
+
+
+/* =========================================
+   戻る
+========================================= */
+
+backButton.addEventListener(
+    "click",
+    function(e){
+
+        e.preventDefault();
+        e.stopPropagation();
+
+        if(spinning)
+            return;
+
+        showScreen("home");
+
+    }
+);
+
+
+/* =========================================
+   ギャンブル上部ナビ
+========================================= */
+
+gambleBackButton.addEventListener("click", function(e){
+    e.preventDefault();
+    e.stopPropagation();
+    showScreen("home");
+});
+
+rouletteNavButton.addEventListener("click", function(e){
+    e.preventDefault();
+    e.stopPropagation();
+    if(currentRank < 2) return;
+    showScreen("gamble");
+});
+
+cardNavButton.addEventListener("click", function(e){
+    e.preventDefault();
+    e.stopPropagation();
+    if(currentRank < 3) return;
+    showScreen("card");
+});
+
+quizNavButton.addEventListener("click", function(e){
+    e.preventDefault();
+    e.stopPropagation();
+    if(currentRank < 4) return;
+    showScreen("slot");
+});
+
+
+/* =========================================
+   通常クリック
+========================================= */
+
+let lastPointerTime = 0;
+
+
+function normalDrop(){
+
+    const now =
+        performance.now();
+
+    if(
+        now -
+        lastPointerTime <
+        5
+    )
+        return;
+
+    lastPointerTime =
+        now;
+
+    addWater(power);
+
+}
+
+
+/* =========================================
+   長押し
+========================================= */
+
+function startHold(e){
+
+    if(
+        e.pointerType === "mouse" &&
+        e.button !== 0
+    )
+        return;
+
+    if(holding)
+        return;
+
+    holding = true;
+
+    holdStart =
+        performance.now();
+
+    holdLast =
+        holdStart;
+
+    function rapid(now){
+
+        if(!holding)
+            return;
+
+        if(
+            now -
+            holdStart >=
+            180
+        ){
+
+            const elapsed =
+                now -
+                holdLast;
+
+            const count =
+                Math.max(
+                    1,
+                    Math.floor(
+                        elapsed / 10
+                    )
+                );
+
+            holdLast =
+                now;
+
+            const holdMultiplier =
+                currentRank >= 5 ? 10n : 1n;
+
+            const amount =
+                power *
+                BigInt(count) *
+                holdMultiplier;
+
+            if(
+                water >
+                MAX_WATER -
+                amount
+            ){
+
+                water =
+                    MAX_WATER;
+
+                update();
+
+                stopHold();
+
+                exceedMax();
+
+                return;
+
+            }
+
+            const before =
+                water;
+
+            water +=
+                amount;
+
+            update();
+
+            if(
+                before < CLEAR_WATER &&
+                water >= CLEAR_WATER
+            ){
+
+                showClearCelebration();
+
+            }
+
+            if(
+                before < TEN_TRILLION &&
+                water >= TEN_TRILLION
+            ){
+
+                showTenTrillionCelebration();
+
+            }
+
+            checkMilestones(before);
+
+            checkDisplayWarning(before);
+
+            calculateRank();
+
+        }
+
+        holdFrame =
+            requestAnimationFrame(
+                rapid
+            );
+
+    }
+
+    holdFrame =
+        requestAnimationFrame(
+            rapid
+        );
+
+}
+
+
+function stopHold(){
+
+    const wasHolding =
+        holding;
+
+    holding = false;
+
+    if(
+        holdFrame !== null
+    ){
+
+        cancelAnimationFrame(
+            holdFrame
+        );
+
+        holdFrame = null;
+
+    }
+
+    if(wasHolding){
+
+        update();
+
+        save();
+
+    }
+
+}
+
+
+dropHit.addEventListener(
+    "pointerdown",
+    function(e){
+
+        e.preventDefault();
+        e.stopPropagation();
+
+        try{
+
+            dropHit.setPointerCapture(
+                e.pointerId
+            );
+
+        }catch{}
+
+        startHold(e);
+
+    },
+    {
+        passive:false
+    }
+);
+
+
+dropHit.addEventListener(
+    "pointerup",
+    function(e){
+
+        e.preventDefault();
+        e.stopPropagation();
+
+        const elapsed =
+            performance.now() -
+            holdStart;
+
+        stopHold();
+
+        if(
+            elapsed < 180
+        ){
+
+            normalDrop();
+
+        }
+
+    },
+    {
+        passive:false
+    }
+);
+
+
+dropHit.addEventListener(
+    "pointercancel",
+    function(e){
+
+        e.preventDefault();
+        e.stopPropagation();
+
+        stopHold();
+
+    },
+    {
+        passive:false
+    }
+);
+
+
+/* =========================================
+   SHOP
+========================================= */
+
+/* =========================================
+   オンラインランキング（Supabase）
+   サーバー側の関数は supabase_setup.sql を参照。
+========================================= */
+
+const oEl = id => document.getElementById(id);
+
+let onlineBusy = false;
+let onlineRefreshToken = 0;
+
+
+function onlineConfigured(){
+
+    return /^https?:\/\//i.test(ONLINE_RANKING.url) &&
+           String(ONLINE_RANKING.anonKey).length > 20;
+
+}
+
+
+function randomHex(bytes){
+
+    const arr = new Uint8Array(bytes);
+
+    crypto.getRandomValues(arr);
+
+    return Array.from(arr, b => b.toString(16).padStart(2, "0")).join("");
+
+}
+
+
+function makeUuid(){
+
+    const h = randomHex(16).split("");
+
+    h[12] = "4";
+    h[16] = "89ab"[parseInt(h[16], 16) % 4];
+
+    const s = h.join("");
+
+    return s.slice(0, 8) + "-" + s.slice(8, 12) + "-" +
+           s.slice(12, 16) + "-" + s.slice(16, 20) + "-" + s.slice(20);
+
+}
+
+
+function ensurePlayerIdentity(){
+
+    if(!playerId || playerSecret.length < 32){
+
+        playerId = makeUuid();
+        playerSecret = randomHex(16);
+
+        save();
+
+    }
+
+}
+
+
+/* ランキング用の水量表示（巨大な数でも1行に収まる形式）。 */
+function formatRankingScore(text){
+
+    try{
+
+        const n = BigInt(text);
+
+        if(n >= DISPLAY_WARNING_WATER)
+            return "10^1000ml（上限）";
+
+        // 無量大数以下は読みやすい日本語の単位、それ以上は 1.23×10^N 形式
+        if(n <= MURYO)
+            return formatWater(n);
+
+        const digits = n.toString();
+
+        return digits[0] + "." + digits.slice(1, 3) +
+               "×10^" + (digits.length - 1) + "ml";
+
+    }catch{
+
+        return "？";
+
+    }
+
+}
+
+
+async function onlineRpc(fn, body){
+
+    const key = String(ONLINE_RANKING.anonKey);
+
+    const headers = {
+        "Content-Type":"application/json",
+        "apikey":key
+    };
+
+    // 従来形式(JWT)のキーだけ Authorization にも付ける
+    if(key.startsWith("eyJ"))
+        headers["Authorization"] = "Bearer " + key;
+
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), 10000);
+
+    try{
+
+        const res = await fetch(
+            ONLINE_RANKING.url.replace(/\/+$/, "") + "/rest/v1/rpc/" + fn,
+            {
+                method:"POST",
+                headers:headers,
+                body:JSON.stringify(body),
+                signal:ctrl.signal
+            }
+        );
+
+        const text = await res.text();
+
+        let data = null;
+
+        try{
+            data = text ? JSON.parse(text) : null;
+        }catch{
+            data = null;
+        }
+
+        if(!res.ok){
+
+            const err = new Error(
+                (data && (data.message || data.error)) || ("HTTP " + res.status)
+            );
+
+            err.status = res.status;
+
+            throw err;
+
+        }
+
+        return data;
+
+    }finally{
+
+        clearTimeout(timer);
+
+    }
+
+}
+
+
+function onlineErrorText(err){
+
+    const msg = String((err && err.message) || "");
+
+    if(err && err.name === "AbortError")
+        return "通信がタイムアウトしました。";
+
+    if(/too fast/.test(msg))
+        return "短い間に何度も送信できません。少し待ってからもう一度どうぞ。";
+
+    if(/forbidden/.test(msg))
+        return "この記録は別のデータで登録されているため更新できません。";
+
+    if(/bad name/.test(msg))
+        return "名前が正しくありません。";
+
+    if(err && err.status === 404)
+        return "サーバーの設定が見つかりません。（SQLの実行を確認してください）";
+
+    return "通信に失敗しました。（" + (err && err.status ? err.status : "オフライン？") + "）";
+
+}
+
+
+function setOnlineMessage(text, kind){
+
+    const el = oEl("onlineMessage");
+
+    el.textContent = text || "";
+    el.className = "online-message" + (kind ? " " + kind : "");
+
+}
+
+
+function setOnlineBusy(busy){
+
+    onlineBusy = busy;
+
+    oEl("onlineSubmit").disabled = busy;
+    oEl("onlineDelete").disabled = busy;
+    oEl("onlineReload").disabled = busy;
+
+}
+
+
+function updateOnlineMe(){
+
+    oEl("onlineMyScore").textContent =
+        "最高到達水量：" + formatRankingScore(maxWater.toString());
+
+    const notice = oEl("onlineNotice");
+
+    if(debugUsed){
+        notice.textContent = "※ デバッグ機能を使用したデータはランキングに登録できません。";
+        notice.classList.remove("hidden");
+    }else{
+        notice.classList.add("hidden");
+    }
+
+}
+
+
+function renderOnlineList(rows){
+
+    const list = oEl("onlineList");
+
+    list.innerHTML = "";
+
+    if(!rows.length){
+
+        const empty = document.createElement("div");
+        empty.className = "online-empty";
+        empty.textContent = "まだ記録がありません。一番乗りになろう！";
+        list.appendChild(empty);
+
+        return;
+
+    }
+
+    const medals = ["🥇", "🥈", "🥉"];
+
+    rows.forEach(r => {
+
+        const row = document.createElement("div");
+        row.className = "online-row" + (r.is_me ? " me" : "");
+
+        const pos = document.createElement("div");
+        pos.className = "online-pos";
+        pos.textContent = r.pos <= 3 ? medals[r.pos - 1] : String(r.pos);
+
+        const info = document.createElement("div");
+        info.className = "online-info";
+
+        const name = document.createElement("div");
+        name.className = "online-name";
+        name.textContent = String(r.name);
+
+        const detail = document.createElement("div");
+        detail.className = "online-detail";
+        detail.textContent =
+            "RANK " + Number(r.rank) + " ／ " + formatRankingScore(String(r.score));
+
+        info.appendChild(name);
+        info.appendChild(detail);
+
+        row.appendChild(pos);
+        row.appendChild(info);
+
+        list.appendChild(row);
+
+    });
+
+}
+
+
+async function refreshOnline(silent){
+
+    const token = ++onlineRefreshToken;
+
+    updateOnlineMe();
+
+    if(!onlineConfigured()){
+
+        renderOnlineList([]);
+        oEl("onlineMyPos").textContent = "未登録";
+        setOnlineMessage("オンラインランキングはまだ設定されていません。（README を参照）", "err");
+
+        return;
+
+    }
+
+    if(!silent)
+        setOnlineMessage("読み込み中…");
+
+    try{
+
+        const [rows, mine] = await Promise.all([
+            onlineRpc("get_leaderboard", {p_limit:50, p_id:playerId || null}),
+            playerId
+                ? onlineRpc("get_my_position", {p_id:playerId})
+                : Promise.resolve(null)
+        ]);
+
+        if(token !== onlineRefreshToken)
+            return;
+
+        renderOnlineList(Array.isArray(rows) ? rows : []);
+
+        const me = Array.isArray(mine) && mine[0] ? mine[0] : null;
+
+        oEl("onlineMyPos").textContent =
+            me ? "あなたの順位：" + me.pos + "位" : "未登録";
+
+        if(!silent)
+            setOnlineMessage("");
+
+    }catch(err){
+
+        if(token !== onlineRefreshToken)
+            return;
+
+        setOnlineMessage(onlineErrorText(err), "err");
+
+    }
+
+}
+
+
+async function submitOnlineScore(){
+
+    if(onlineBusy)
+        return;
+
+    if(!onlineConfigured()){
+        setOnlineMessage("オンラインランキングはまだ設定されていません。", "err");
+        return;
+    }
+
+    if(debugUsed){
+        setOnlineMessage("デバッグ機能を使用したデータは登録できません。", "err");
+        return;
+    }
+
+    const name = oEl("onlineName").value.trim();
+    const length = Array.from(name).length;
+
+    if(length < 1 || length > 12 || /[\u0000-\u001f\u007f]/.test(name)){
+        setOnlineMessage("名前は1〜12文字で入力してください。", "err");
+        return;
+    }
+
+    if(maxWater < 1n){
+        setOnlineMessage("水を集めてから登録しよう！", "err");
+        return;
+    }
+
+    ensurePlayerIdentity();
+
+    playerName = name;
+    save();
+
+    setOnlineBusy(true);
+    setOnlineMessage("送信中…");
+
+    try{
+
+        const res = await onlineRpc("submit_score", {
+            p_id:playerId,
+            p_secret:playerSecret,
+            p_name:name,
+            p_score:maxWater.toString(),
+            p_rank:currentRank
+        });
+
+        setOnlineMessage(
+            "登録しました！" + (res && res.pos ? "現在 " + res.pos + "位" : ""),
+            "ok"
+        );
+
+        await refreshOnline(true);
+
+    }catch(err){
+
+        setOnlineMessage(onlineErrorText(err), "err");
+
+    }finally{
+
+        setOnlineBusy(false);
+
+    }
+
+}
+
+
+async function deleteOnlineScore(){
+
+    if(onlineBusy)
+        return;
+
+    if(!onlineConfigured() || !playerId){
+        setOnlineMessage("削除する記録がありません。", "err");
+        return;
+    }
+
+    if(!confirm("ランキングから自分の記録を削除しますか？"))
+        return;
+
+    setOnlineBusy(true);
+    setOnlineMessage("削除中…");
+
+    try{
+
+        const res = await onlineRpc("delete_score", {
+            p_id:playerId,
+            p_secret:playerSecret
+        });
+
+        setOnlineMessage(
+            res && res.deleted ? "記録を削除しました。" : "登録された記録はありませんでした。",
+            "ok"
+        );
+
+        await refreshOnline(true);
+
+    }catch(err){
+
+        setOnlineMessage(onlineErrorText(err), "err");
+
+    }finally{
+
+        setOnlineBusy(false);
+
+    }
+
+}
+
+
+function openOnlineScreen(){
+
+    oEl("onlineName").value = playerName;
+
+    showScreen("online");
+
+    refreshOnline();
+
+}
+
+
+oEl("onlineOpen").addEventListener("click", function(e){
+    e.preventDefault();
+    e.stopPropagation();
+    openOnlineScreen();
+});
+
+oEl("onlineBackButton").addEventListener("click", function(e){
+    e.preventDefault();
+    e.stopPropagation();
+    showScreen("home");
+});
+
+oEl("onlineSubmit").addEventListener("click", function(e){
+    e.preventDefault();
+    e.stopPropagation();
+    submitOnlineScore();
+});
+
+oEl("onlineDelete").addEventListener("click", function(e){
+    e.preventDefault();
+    e.stopPropagation();
+    deleteOnlineScore();
+});
+
+oEl("onlineReload").addEventListener("click", function(e){
+    e.preventDefault();
+    e.stopPropagation();
+    refreshOnline();
+});
+
+oEl("onlineName").addEventListener("keydown", function(e){
+    if(e.key === "Enter"){
+        e.preventDefault();
+        submitOnlineScore();
+    }
+});
+
+
+/* =========================================
+   スキン
+========================================= */
+
+function isSkinUnlocked(skin){
+
+    return currentRank >= skin.rank;
+
+}
+
+
+function applySkin(){
+
+    let skin = SKINS.find(s => s.id === selectedSkin);
+
+    // 未解放・不明なスキンはノーマルに戻す
+    if(!skin || !isSkinUnlocked(skin)){
+        skin = SKINS[0];
+        selectedSkin = skin.id;
+    }
+
+    const root = document.documentElement.style;
+
+    skin.g.forEach((color, i) => {
+        root.setProperty("--drop-g" + (i + 1), color);
+    });
+
+    root.setProperty("--drop-border", skin.border);
+    root.setProperty("--drop-hl", skin.hl);
+    root.setProperty("--drop-glow", skin.glow || "none");
+
+}
+
+
+function buildSkinScreen(){
+
+    const current = SKINS.find(s => s.id === selectedSkin) || SKINS[0];
+
+    skinCurrent.textContent = "使用中：" + current.name;
+
+    skinList.innerHTML = "";
+
+    SKINS.forEach(skin=>{
+
+        const unlocked = isSkinUnlocked(skin);
+
+        const box = document.createElement("div");
+        box.className = "shop-item " + (unlocked ? "unlocked" : "insufficient");
+
+        const preview = document.createElement("div");
+        preview.className = "skin-preview" + (unlocked ? "" : " locked");
+        skin.g.forEach((color, i) => {
+            preview.style.setProperty("--sk-g" + (i + 1), color);
+        });
+        preview.style.setProperty("--sk-border", skin.border);
+
+        const info = document.createElement("div");
+        info.className = "shop-info";
+
+        const name = document.createElement("div");
+        name.className = "shop-name";
+        name.textContent = skin.name;
+
+        const detail = document.createElement("div");
+        detail.className = "shop-detail";
+        detail.textContent = unlocked
+            ? skin.desc
+            : "RANK " + skin.rank + " で解放";
+
+        info.appendChild(name);
+        info.appendChild(detail);
+
+        const button = document.createElement("button");
+        button.className = "shop-action";
+        button.type = "button";
+
+        if(!unlocked){
+            button.textContent = "🔒 RANK " + skin.rank;
+            button.disabled = true;
+        }else if(skin.id === selectedSkin){
+            button.textContent = "使用中";
+        }else{
+            button.textContent = "切り替える";
+        }
+
+        button.addEventListener("click", function(e){
+            e.preventDefault();
+            e.stopPropagation();
+            selectSkin(skin.id);
+        });
+
+        box.appendChild(preview);
+        box.appendChild(info);
+        box.appendChild(button);
+
+        skinList.appendChild(box);
+
+    });
+
+}
+
+
+function selectSkin(id){
+
+    const skin = SKINS.find(s => s.id === id);
+
+    if(!skin || !isSkinUnlocked(skin))
+        return;
+
+    selectedSkin = id;
+
+    applySkin();
+
+    buildSkinScreen();
+
+    save();
+
+}
+
+
+document.getElementById("skinOpen").addEventListener("click", function(e){
+    e.preventDefault();
+    e.stopPropagation();
+    buildSkinScreen();
+    showScreen("skin");
+});
+
+document.getElementById("skinBackButton").addEventListener("click", function(e){
+    e.preventDefault();
+    e.stopPropagation();
+    showScreen("home");
+});
+
+
+/* =========================================
+   オートアイテム
+========================================= */
+
+function recalcAutoRate(){
+
+    let total = 0n;
+
+    autoShop.forEach(item=>{
+        if(autoOwned.includes(item.id))
+            total += item.rate;
+    });
+
+    autoRate = total;
+
+}
+
+
+function autoSummaryText(){
+
+    return "現在の自動生成：毎秒 " + formatWater(autoRate);
+
+}
+
+
+function refreshShopAffordability(){
+
+    // 行を作り直さず、グレー表示だけ切り替える
+    // （タップ中にボタンが入れ替わってクリックが消えるのを防ぐ）
+    shopRows.forEach(row=>{
+        row.box.classList.toggle(
+            "insufficient",
+            !row.owned && water < row.cost
+        );
+    });
+
+}
+
+
+function buildAutoShop(){
+
+    shopRows = [];
+
+    shopList.innerHTML = "";
+
+    autoSummary.textContent = autoSummaryText();
+
+    autoShop.forEach(item=>{
+
+        const bought = autoOwned.includes(item.id);
+
+        const box = document.createElement("div");
+        box.className = "shop-item" + (bought ? " unlocked" : "");
+
+        const info = document.createElement("div");
+        info.className = "shop-info";
+
+        const name = document.createElement("div");
+        name.className = "shop-name";
+        name.textContent = item.name;
+
+        const detail = document.createElement("div");
+        detail.className = "shop-detail";
+        detail.textContent = "毎秒：+" + formatWater(item.rate);
+
+        info.appendChild(name);
+        info.appendChild(detail);
+
+        const button = document.createElement("button");
+        button.className = "shop-action";
+        button.type = "button";
+
+        if(bought){
+            button.textContent = "購入済み";
+            button.disabled = true;
+        }else{
+            button.textContent = "購入 " + formatWater(item.cost);
+        }
+
+        button.addEventListener("click", function(e){
+            e.preventDefault();
+            e.stopPropagation();
+            buyAutoItem(item.id);
+        });
+
+        box.appendChild(info);
+        box.appendChild(button);
+
+        shopRows.push({box:box, cost:item.cost, owned:bought});
+
+        shopList.appendChild(box);
+
+    });
+
+    refreshShopAffordability();
+
+}
+
+
+function buyAutoItem(id){
+
+    const item = autoShop.find(a => a.id === id);
+
+    if(!item || autoOwned.includes(id))
+        return;
+
+    if(!subtractWater(item.cost)){
+
+        autoSummary.textContent = "水が足りません！";
+
+        setTimeout(function(){
+            if(shopTab === "auto")
+                autoSummary.textContent = autoSummaryText();
+        }, 1500);
+
+        return;
+
+    }
+
+    autoOwned.push(id);
+
+    recalcAutoRate();
+
+    update();
+
+    buildShop();
+
+    save();
+
+}
+
+
+function setShopTab(tab){
+
+    shopTab = (tab === "auto") ? "auto" : "click";
+
+    shopTabClick.classList.toggle("active", shopTab === "click");
+    shopTabAuto.classList.toggle("active", shopTab === "auto");
+    autoSummary.classList.toggle("hidden", shopTab !== "auto");
+
+    buildShop();
+
+}
+
+
+shopTabClick.addEventListener("click", function(e){
+    e.preventDefault();
+    e.stopPropagation();
+    setShopTab("click");
+});
+
+shopTabAuto.addEventListener("click", function(e){
+    e.preventDefault();
+    e.stopPropagation();
+    setShopTab("auto");
+});
+
+
+/* 自動生成のメインループ。
+   経過時間ぶんをまとめて加算するので、タブが裏に回って
+   タイマーが遅くなっても取りこぼさない。 */
+function autoTick(){
+
+    const now = Date.now();
+
+    let dt = now - autoLastTick;
+
+    autoLastTick = now;
+
+    if(dt <= 0 || autoRate <= 0n)
+        return;
+
+    if(dt > 3600000)
+        dt = 3600000;
+
+    if(water >= MAX_WATER)
+        return;
+
+    const scaled = autoRate * BigInt(dt) + autoRemainder;
+
+    const gain = scaled / 1000n;
+
+    autoRemainder = scaled % 1000n;
+
+    if(gain > 0n)
+        addWater(gain);
+
+    if(!shopScreen.classList.contains("hidden"))
+        refreshShopAffordability();
+
+}
+
+// 保存の遅延タイマー(250ms)を毎回リセットしてしまわない間隔にする
+setInterval(autoTick, 500);
+
+// アプリを切り替えた時などに確実に保存
+document.addEventListener("visibilitychange", function(){
+    if(document.hidden)
+        flushSave();
+});
+
+
+function isUnlocked(index){
+
+    return owned.includes(index);
+
+}
+
+
+function unlockUntil(index){
+
+    for(
+        let i=0;
+        i<=index;
+        i++
+    ){
+
+        if(
+            !owned.includes(i)
+        ){
+
+            owned.push(i);
+
+        }
+
+    }
+
+    owned.sort(
+        (a,b)=>a-b
+    );
+
+}
+
+
+function buildShop(){
+
+    if(shopTab === "auto")
+        buildAutoShop();
+    else
+        buildClickShop();
+
+}
+
+
+function buildClickShop(){
+
+    shopRows = [];
+
+    shopList.innerHTML =
+        "";
+
+    shop.forEach(
+        (item,index)=>{
+
+            const unlocked =
+                isUnlocked(index);
+
+            const insufficient =
+                !unlocked &&
+                water < item.cost;
+
+            const box =
+                document.createElement(
+                    "div"
+                );
+
+            box.className =
+                "shop-item" +
+                (
+                    unlocked
+                    ? " unlocked"
+                    : ""
+                ) +
+                (
+                    insufficient
+                    ? " insufficient"
+                    : ""
+                );
+
+            const info =
+                document.createElement(
+                    "div"
+                );
+
+            info.className =
+                "shop-info";
+
+            const name =
+                document.createElement(
+                    "div"
+                );
+
+            name.className =
+                "shop-name";
+
+            name.textContent =
+                item.name;
+
+            const detail =
+                document.createElement(
+                    "div"
+                );
+
+            detail.className =
+                "shop-detail";
+
+            detail.textContent =
+                "1クリック：" +
+                formatWater(getShopGain(item));
+
+            info.appendChild(name);
+            info.appendChild(detail);
+
+            const button =
+                document.createElement(
+                    "button"
+                );
+
+            button.className =
+                "shop-action";
+
+            button.type =
+                "button";
+
+            if(unlocked){
+
+                button.textContent =
+                    power === getShopGain(item)
+                    ? "使用中"
+                    : "切り替える";
+
+            }else{
+
+                button.textContent =
+                    "購入 " +
+                    formatWater(item.cost);
+
+            }
+
+            button.addEventListener(
+                "click",
+                function(e){
+
+                    e.preventDefault();
+                    e.stopPropagation();
+
+                    handleShop(index);
+
+                }
+            );
+
+            box.appendChild(info);
+            box.appendChild(button);
+
+            shopRows.push({box:box, cost:item.cost, owned:unlocked});
+
+            shopList.appendChild(box);
+
+        }
+    );
+
+}
+
+
+function handleShop(index){
+
+    const item =
+        shop[index];
+
+    if(
+        isUnlocked(index)
+    ){
+
+        selectedShopIndex = index;
+        if(!rankSettingOverride.clickPower)
+            power = getShopGain(item);
+        else
+            power = item.gain;
+
+        update();
+
+        buildShop();
+
+        save();
+
+        return;
+
+    }
+
+    if(
+        water <
+        item.cost
+    ){
+
+        result.textContent =
+            "水が足りません！";
+
+        return;
+
+    }
+
+    water -=
+        item.cost;
+
+    unlockUntil(index);
+
+    selectedShopIndex = index;
+    if(!rankSettingOverride.clickPower)
+        power = getShopGain(item);
+    else
+        power = item.gain;
+
+    update();
+
+    buildShop();
+
+    save();
+
+}
+
+
+/* =========================================
+   ルーレット
+========================================= */
+
+function updateRouletteCooldown(){
+    const now = Date.now();
+    const remaining = Math.max(0, rouletteCooldownUntil - now);
+
+    if(remaining <= 0){
+        if(rouletteCooldownUntil !== 0){
+            rouletteCooldownUntil = 0;
+            rouletteSpinCount = 0;
+            save();
+        }
+        if(rouletteCooldownTimer !== null){
+            clearInterval(rouletteCooldownTimer);
+            rouletteCooldownTimer = null;
+        }
+        spinButton.disabled = spinning;
+        if(rouletteCooldown) rouletteCooldown.textContent = "ルーレット：あと" + Math.max(0, rouletteCooldownUses - rouletteSpinCount) + "回";
+        return;
+    }
+
+    spinButton.disabled = true;
+    const seconds = Math.ceil(remaining / 1000);
+    if(rouletteCooldown) rouletteCooldown.textContent = "ルーレット：クールタイム " + seconds + "秒";
+
+    if(rouletteCooldownTimer === null){
+        rouletteCooldownTimer = setInterval(updateRouletteCooldown, 250);
+    }
+}
+
+function registerRouletteUse(){
+    rouletteSpinCount++;
+    if(rouletteSpinCount >= Math.max(1, rouletteCooldownUses)){
+        rouletteSpinCount = 0;
+        if(rouletteCooldownSeconds > 0){
+            rouletteCooldownUntil = Date.now() + rouletteCooldownSeconds * 1000;
+        }else{
+            rouletteCooldownUntil = 0;
+        }
+    }
+    updateRouletteCooldown();
+}
+
+
+function buildWheel(){
+
+    const total =
+        roulette.reduce(
+            (sum,item)=>
+                sum + item.p,
+            0
+        );
+
+    let current = 0;
+
+    const colors = [];
+
+    let normalIndex = 0;
+
+    roulette.forEach(
+        item=>{
+
+            let color;
+
+            if(
+                item.type ===
+                "jackpot"
+            ){
+
+                color =
+                    "#ffd95e";
+
+            }else{
+
+                color =
+                    normalIndex % 2 === 0
+                    ? "#9be7ff"
+                    : "#39bce8";
+
+                normalIndex++;
+
+            }
+
+            const start =
+                current /
+                total *
+                360;
+
+            current +=
+                item.p;
+
+            const end =
+                current /
+                total *
+                360;
+
+            colors.push(
+                color +
+                " " +
+                start +
+                "deg " +
+                end +
+                "deg"
+            );
+
+        }
+    );
+
+    wheel.style.background =
+        "conic-gradient(" +
+        colors.join(",") +
+        ")";
+
+
+    /*
+        盤面上に倍率を表示
+    */
+
+    wheel
+    .querySelectorAll(".wheel-label")
+    .forEach(
+        el=>el.remove()
+    );
+
+    current = 0;
+
+    roulette.forEach(
+        item=>{
+
+            const start =
+                current /
+                total *
+                360;
+
+            current +=
+                item.p;
+
+            const end =
+                current /
+                total *
+                360;
+
+            const center =
+                (
+                    start +
+                    end
+                ) / 2;
+
+            const label =
+                document.createElement(
+                    "div"
+                );
+
+            label.className =
+                "wheel-label" +
+                (
+                    item.type === "jackpot"
+                    ? " jackpot"
+                    : ""
+                );
+
+            const displayMultiplier =
+                item.type === "jackpot"
+                ? jackpotMultiplier * rouletteNumberMultiplier
+                : item.m * rouletteNumberMultiplier;
+
+            label.textContent =
+                "×" + displayMultiplier;
+
+            label.style.transform =
+                "translate(-50%,-50%) " +
+                "rotate(" +
+                center +
+                "deg) " +
+                "translateY(-125px) " +
+                "rotate(" +
+                (-center) +
+                "deg)";
+
+            wheel.appendChild(
+                label
+            );
+
+        }
+    );
+
+}
+
+
+function pickRoulette(){
+
+    let r =
+        Math.random() *
+        100;
+
+    for(
+        let i=0;
+        i<roulette.length;
+        i++
+    ){
+
+        r -=
+            roulette[i].p;
+
+        if(r < 0)
+            return i;
+
+    }
+
+    return roulette.length - 1;
+
+}
+
+
+function getSegmentCenter(index){
+
+    const total =
+        roulette.reduce(
+            (sum,item)=>
+                sum + item.p,
+            0
+        );
+
+    let start = 0;
+
+    for(
+        let i=0;
+        i<index;
+        i++
+    ){
+
+        start +=
+            roulette[i].p /
+            total *
+            360;
+
+    }
+
+    const width =
+        roulette[index].p /
+        total *
+        360;
+
+    return start +
+        width / 2;
+
+}
+
+
+function multiplyWater(
+    value,
+    multiplier
+){
+
+    value =
+        toBigIntSafe(value);
+
+    if(
+        Number.isInteger(
+            multiplier
+        )
+    ){
+
+        return (
+            value *
+            BigInt(multiplier)
+        );
+
+    }
+
+    const text =
+        String(multiplier);
+
+    const parts =
+        text.split(".");
+
+    const integer =
+        BigInt(parts[0]);
+
+    const decimal =
+        parts[1] || "";
+
+    const denominator =
+        10n **
+        BigInt(
+            decimal.length
+        );
+
+    const numerator =
+        integer *
+        denominator +
+        BigInt(
+            decimal || "0"
+        );
+
+    return (
+        value *
+        numerator
+    ) /
+    denominator;
+
+}
+
+
+function getRouletteActualMultiplier(item){
+    if(item.type === "jackpot")
+        return jackpotMultiplier * rouletteNumberMultiplier;
+    return item.m * rouletteNumberMultiplier;
+}
+
+
+function resolveRoulette(){
+
+    if(!spinning || !spinChosen)
+        return;
+
+    if(spinTimer !== null){
+        clearTimeout(spinTimer);
+        spinTimer = null;
+    }
+
+    const chosen = spinChosen;
+    const value = spinBetValue;
+
+    const reward =
+        multiplyWater(
+            value,
+            getRouletteActualMultiplier(chosen)
+        );
+
+    if(reward > 0n){
+
+        if(water > MAX_WATER - reward){
+            water = MAX_WATER;
+            update();
+            save();
+
+            spinning = false;
+            spinButton.disabled = false;
+            bet.disabled = false;
+            skipButton.style.display = "none";
+            registerRouletteUse();
+            save();
+
+            exceedMax();
+            return;
+        }
+
+        const before = water;
+        water += reward;
+
+        if(before < CLEAR_WATER && water >= CLEAR_WATER)
+            showClearCelebration();
+
+        if(before < TEN_TRILLION && water >= TEN_TRILLION)
+            showTenTrillionCelebration();
+
+        checkMilestones(before);
+        checkDisplayWarning(before);
+        calculateRank();
+    }
+
+    if(chosen.type === "jackpot"){
+
+        result.innerHTML =
+            "🎯 JACKPOT確定！ 🎯<br>" +
+            "×" + getRouletteActualMultiplier(chosen);
+
+        wheel.classList.add("jackpot-confirm");
+        screenFlash();
+        createStars(60);
+        createGoldParticles(70);
+
+        setTimeout(()=>{
+            jackpotText.textContent = "×" + getRouletteActualMultiplier(chosen);
+            jackpotOverlay.classList.add("show");
+            wheel.classList.remove("jackpot-confirm");
+        }, 700);
+
+    }else{
+
+        result.innerHTML =
+            "結果：×" +
+            chosen.m +
+            "<br>" +
+            "獲得：" +
+            formatWater(reward);
+    }
+
+    spinning = false;
+    spinChosen = null;
+    spinBetValue = 0n;
+    spinSkipped = false;
+
+    spinButton.disabled = false;
+    bet.disabled = false;
+    skipButton.style.display = "none";
+    registerRouletteUse();
+
+    update();
+    save();
+}
+
+
+function spin(){
+
+    if(spinning)
+        return;
+
+    if(rouletteCooldownUntil > Date.now()){
+        updateRouletteCooldown();
+        result.textContent = "ルーレットはクールタイム中です。";
+        return;
+    }
+
+    const input = bet.value.trim();
+
+    if(!/^\d+$/.test(input)){
+        result.textContent =
+            "賭ける水量を入力してください。";
+        openKeyboard("roulette");
+        return;
+    }
+
+    let value;
+
+    try{
+        value = BigInt(input);
+    }catch{
+        result.textContent =
+            "入力値が正しくありません。";
+        return;
+    }
+
+    if(value <= 0n){
+        result.textContent =
+            "1ml以上を入力してください。";
+        return;
+    }
+
+    if(value > water){
+        result.textContent =
+            "水が足りません！";
+        return;
+    }
+
+    water -= value;
+    update();
+    save();
+
+    spinning = true;
+    spinBetValue = value;
+    spinSkipped = false;
+
+    spinButton.disabled = true;
+    bet.disabled = true;
+    skipButton.style.display = "block";
+
+    result.textContent =
+        "ルーレット回転中……";
+
+    closeKeyboard();
+
+    const index = pickRoulette();
+    const chosen = roulette[index];
+
+    spinChosen = chosen;
+
+    const targetCenter = getSegmentCenter(index);
+
+    const normalizedCurrent =
+        (wheelRotation % 360 + 360) % 360;
+
+    const targetRotation =
+        (360 - targetCenter + 360) % 360;
+
+    let difference =
+        targetRotation - normalizedCurrent;
+
+    if(difference < 0)
+        difference += 360;
+
+    wheelRotation += 5 * 360 + difference;
+
+    wheel.style.transform =
+        "rotate(" + wheelRotation + "deg)";
+
+    spinTimer = setTimeout(
+        resolveRoulette,
+        4100
+    );
+}
+
+
+skipButton.addEventListener(
+    "click",
+    function(e){
+
+        e.preventDefault();
+        e.stopPropagation();
+
+        if(!spinning)
+            return;
+
+        spinSkipped = true;
+
+        if(spinTimer !== null){
+            clearTimeout(spinTimer);
+            spinTimer = null;
+        }
+
+        /* 演出を飛ばして結果だけを出す */
+        wheel.style.transition = "none";
+
+        if(spinChosen){
+            const targetCenter =
+                getSegmentCenter(
+                    roulette.indexOf(spinChosen)
+                );
+
+            wheelRotation =
+                360 - targetCenter;
+
+            wheel.style.transform =
+                "rotate(" +
+                wheelRotation +
+                "deg)";
+
+            requestAnimationFrame(()=>{
+                wheel.style.transition =
+                    "transform 4s cubic-bezier(.12,.7,.15,1)";
+            });
+        }
+
+        setTimeout(
+            resolveRoulette,
+            spinChosen && spinChosen.type === "jackpot"
+            ? 100
+            : 30
+        );
+
+    }
+);
+
+
+
+
+
+/* =========================================
+   計算チャレンジ
+========================================= */
+function clearQuizTimer(){
+    if(quizTimerId !== null){
+        clearInterval(quizTimerId);
+        quizTimerId = null;
+    }
+}
+
+function updateQuizCooldown(){
+    const now = Date.now();
+    const remaining = Math.max(0, quizCooldownUntil - now);
+
+    if(remaining <= 0){
+        if(quizCooldownUntil !== 0){
+            quizCooldownUntil = 0;
+            save();
+        }
+        if(quizCooldownTimer !== null){
+            clearInterval(quizCooldownTimer);
+            quizCooldownTimer = null;
+        }
+        if(quizTimerId === null){
+            slotSpinButton.disabled = false;
+            slotSpinButton.textContent = "問題を出す";
+        }
+        return;
+    }
+
+    slotSpinButton.disabled = true;
+    slotSpinButton.textContent = "クールタイム中";
+    quizTimer.textContent = "クールタイム：" + Math.ceil(remaining / 1000) + "秒";
+
+    if(quizCooldownTimer === null){
+        quizCooldownTimer = setInterval(updateQuizCooldown, 250);
+    }
+}
+
+function startQuizCooldown(){
+    if(quizCooldownSeconds <= 0){
+        quizCooldownUntil = 0;
+        updateQuizCooldown();
+        return;
+    }
+    quizCooldownUntil = Date.now() + quizCooldownSeconds * 1000;
+    updateQuizCooldown();
+    save();
+}
+
+
+function startQuiz(){
+    if(quizCooldownUntil > Date.now()){
+        updateQuizCooldown();
+        slotResult.textContent = "クイズはクールタイム中です。";
+        return;
+    }
+
+    if(currentRank < 4){
+        slotResult.textContent = "RANK 4で計算チャレンジが解放されます。";
+        return;
+    }
+
+    const input = slotBet.value.trim();
+    if(!/^\d+$/.test(input)){
+        slotResult.textContent = "賭ける水量を入力してください。";
+        openKeyboard("slotBet");
+        return;
+    }
+
+    const value = toBigIntSafe(input);
+    if(value <= 0n){
+        slotResult.textContent = "1ml以上を入力してください。";
+        return;
+    }
+    if(value > water){
+        slotResult.textContent = "水が足りません！";
+        return;
+    }
+
+    clearQuizTimer();
+    closeKeyboard();
+    water -= value;
+    slotBetValue = value;
+    quizQuestionA = 1 + Math.floor(Math.random()*9);
+    quizQuestionB = 1 + Math.floor(Math.random()*9);
+    quizAnswerValue = quizQuestionA * quizQuestionB;
+    quizDeadline = performance.now() + quizTimeSeconds * 1000;
+
+    quizQuestion.textContent = quizQuestionA + " × " + quizQuestionB + " = ?";
+    quizAnswer.value = "";
+    quizAnswer.disabled = false;
+    slotSpinButton.textContent = "回答する";
+    slotSpinButton.disabled = false;
+    slotResult.textContent = Number(quizTimeSeconds).toFixed(1) + "秒以内に答えてください！";
+    keyboardTarget = "quizAnswer";
+    updateKeyboardDisplay();
+
+    quizTimerId = setInterval(function(){
+        const remaining = Math.max(0, quizDeadline - performance.now());
+        quizTimer.textContent = "制限時間：" + (remaining / 1000).toFixed(1) + "秒";
+        if(remaining <= 0){
+            clearQuizTimer();
+            finishQuiz(false, true);
+        }
+    }, 50);
+
+    update();
+    save();
+}
+
+function finishQuiz(correct, timeout){
+    clearQuizTimer();
+    closeKeyboard();
+    quizAnswer.disabled = true;
+    slotSpinButton.disabled = true;
+
+    const beforeQuizReward = water;
+    let reward = 0n;
+    if(correct){
+        reward = slotBetValue * BigInt(quizRewardMultiplier);
+        if(water > MAX_WATER - reward){
+            water = MAX_WATER;
+            slotResult.textContent = "正解！ ×" + quizRewardMultiplier + "（上限到達）";
+            exceedMax();
+        }else{
+            water += reward;
+            slotResult.innerHTML = "正解！ 🎉 ×" + quizRewardMultiplier + "<br>獲得：" + formatWater(reward);
+        }
+    }else{
+        reward = slotBetValue / 100n;
+        water += reward;
+        slotResult.innerHTML = (timeout ? "時間切れ！" : "不正解！") + " ×0.01<br>戻った水：" + formatWater(reward);
+    }
+
+    if(beforeQuizReward < CLEAR_WATER && water >= CLEAR_WATER){
+        showClearCelebration();
+    }
+    if(beforeQuizReward < TEN_TRILLION && water >= TEN_TRILLION){
+        showTenTrillionCelebration();
+    }
+    checkMilestones(beforeQuizReward);
+    checkDisplayWarning(beforeQuizReward);
+
+    quizTimer.textContent = "制限時間：" + Number(quizTimeSeconds).toFixed(1) + "秒";
+    slotBetValue = 0n;
+    quizQuestion.textContent = "? × ? = ?";
+    quizAnswer.value = "";
+    quizAnswer.disabled = false;
+    slotSpinButton.disabled = false;
+    slotSpinButton.textContent = "問題を出す";
+    keyboardTarget = "slotBet";
+    startQuizCooldown();
+    updateKeyboardMode();
+    update();
+    save();
+}
+
+slotSpinButton.addEventListener("click", function(e){
+    e.preventDefault();
+    e.stopPropagation();
+    if(quizTimerId !== null){
+        const answer = Number(quizAnswer.value);
+        if(Number.isInteger(answer) && answer === quizAnswerValue && performance.now() <= quizDeadline){
+            finishQuiz(true, false);
+        }else if(Number.isInteger(answer)){
+            finishQuiz(false, false);
+        }
+        return;
+    }
+    startQuiz();
+});
+
+/* =========================================
+   カード
+========================================= */
+
+function updateCardFee(){
+
+    if(!cardFee)
+        return;
+
+    const input =
+        cardBet.value.trim();
+
+    if(
+        !/^\d+$/.test(input)
+    ){
+
+        cardFee.textContent =
+            "手数料：0ml";
+
+        return;
+
+    }
+
+    try{
+
+        const value =
+            BigInt(input);
+
+        cardFee.textContent =
+            "手数料：" +
+            formatWater(value);
+
+    }catch{
+
+        cardFee.textContent =
+            "手数料：0ml";
+
+    }
+
+}
+
+
+function updateCardCooldown(){
+
+    const now =
+        Date.now();
+
+    const remaining =
+        Math.max(
+            0,
+            cardCooldownUntil -
+            now
+        );
+
+    if(
+        remaining <= 0
+    ){
+
+        cardCooldownUntil = 0;
+
+        cardStart.disabled =
+            cardActive;
+
+        cardCooldown.textContent =
+            "クールタイム：使用可能";
+
+        if(cardCooldownTimer !== null){
+
+            clearInterval(
+                cardCooldownTimer
+            );
+
+            cardCooldownTimer = null;
+
+        }
+
+        return;
+
+    }
+
+    const seconds =
+        Math.ceil(
+            remaining / 1000
+        );
+
+    cardStart.disabled =
+        true;
+
+    cardCooldown.textContent =
+        "クールタイム：" +
+        seconds +
+        "秒";
+
+    if(
+        cardCooldownTimer === null
+    ){
+
+        cardCooldownTimer =
+            setInterval(
+                ()=>{
+                    updateCardCooldown();
+                },
+                250
+            );
+
+    }
+
+}
+
+
+function startCardCooldown(){
+
+    cardCooldownUntil =
+        Date.now() +
+        Math.max(0, cardCooldownSeconds) * 1000;
+
+    updateCardCooldown();
+
+    save();
+
+}
+
+
+function resetCardRound(){
+
+    card1.classList.remove("flipped");
+    card2.classList.remove("flipped");
+
+    cardFront1.textContent = "?";
+    cardFront2.textContent = "?";
+
+    cardResult = null;
+    cardActive = false;
+    cardVisible = false;
+    cardArea.classList.add("hidden-card");
+    cardStart.style.display = "";
+
+    updateCardCooldown();
+
+    if(
+        cardCooldownUntil <= Date.now()
+    ){
+
+        cardStart.disabled = false;
+
+    }
+
+    cardMessage.textContent =
+        "倍率を指定して、カードを2枚置こう！";
+
+}
+
+
+function validateCardMultiplier(){
+
+    if(
+        !/^\d+$/.test(
+            cardMultiplier.value.trim()
+        )
+    )
+        return null;
+
+    try{
+
+        const value =
+            BigInt(
+                cardMultiplier.value
+            );
+
+        if(
+            value < 10n ||
+            value > cardMaxMultiplier
+        )
+            return null;
+
+        return value;
+
+    }catch{
+
+        return null;
+
+    }
+
+}
+
+
+function startCardGame(){
+
+    if(cardActive)
+        return;
+
+    if(
+        cardCooldownUntil >
+        Date.now()
+    ){
+
+        updateCardCooldown();
+
+        cardMessage.textContent =
+            "クールタイム中です。";
+
+        return;
+
+    }
+
+    const betValue =
+        toBigIntSafe(
+            cardBet.value
+        );
+
+    const multiplier =
+        validateCardMultiplier();
+
+    if(
+        !/^\d+$/.test(
+            cardBet.value.trim()
+        ) ||
+        betValue <= 0n
+    ){
+
+        cardMessage.textContent =
+            "賭ける水量を入力してください。";
+
+        openKeyboard("cardBet");
+
+        return;
+
+    }
+
+    if(multiplier === null){
+
+        cardMessage.textContent =
+            "倍率は10倍～" + cardMaxMultiplier.toString() + "倍で指定してください。";
+
+        openKeyboard("cardMultiplier");
+
+        return;
+
+    }
+
+    /*
+        手数料は賭け水量と同額。
+        合計消費量＝賭け金＋手数料
+    */
+
+    const fee =
+        betValue;
+
+    const totalCost =
+        betValue +
+        fee;
+
+    if(
+        totalCost >
+        water
+    ){
+
+        cardMessage.textContent =
+            "水が足りません！<br>" +
+            "必要：" +
+            formatWater(totalCost);
+
+        return;
+
+    }
+
+    water -=
+        totalCost;
+
+    update();
+
+    save();
+
+    /*
+        カードを置いた時点で
+        20秒クールタイム開始
+    */
+
+    startCardCooldown();
+
+    const operator =
+        Math.random() < .5
+        ? "×"
+        : "÷";
+
+    cardResult = {
+        bet:betValue,
+        multiplier,
+        operator
+    };
+
+    cardActive = true;
+    cardVisible = true;
+    cardArea.classList.remove("hidden-card");
+    cardStart.style.display = "none";
+    cardStart.disabled = true;
+
+    cardMessage.innerHTML =
+        "カードを1枚選んでください！<br>" +
+        "手数料：" +
+        formatWater(fee);
+
+    if(
+        operator === "×"
+    ){
+
+        cardFront1.textContent =
+            "×";
+
+        cardFront2.textContent =
+            "÷";
+
+    }else{
+
+        cardFront1.textContent =
+            "÷";
+
+        cardFront2.textContent =
+            "×";
+
+    }
+
+}
+
+
+function flipCard(index){
+
+    if(!cardActive)
+        return;
+
+    const card =
+        index === 1
+        ? card1
+        : card2;
+
+    if(
+        card.classList.contains("flipped")
+    )
+        return;
+
+    card.classList.add("flipped");
+
+    const operator =
+        index === 1
+        ? cardFront1.textContent
+        : cardFront2.textContent;
+
+    const betValue =
+        cardResult.bet;
+
+    const multiplier =
+        cardResult.multiplier;
+
+    let reward = 0n;
+
+    if(operator === "×"){
+
+        reward =
+            betValue *
+            multiplier;
+
+    }else{
+
+        reward =
+            betValue /
+            multiplier;
+
+    }
+
+    if(
+        reward > MAX_WATER - water
+    ){
+
+        water =
+            MAX_WATER;
+
+        update();
+
+        save();
+
+        cardMessage.innerHTML =
+            "結果：" +
+            operator +
+            "<br>" +
+            "上限に到達しました！";
+
+        cardActive = false;
+
+        cardStart.disabled = true;
+
+        exceedMax();
+
+        setTimeout(
+            ()=>resetCardRound(),
+            1200
+        );
+
+        return;
+
+    }
+
+    const before =
+        water;
+
+    water +=
+        reward;
+
+    update();
+
+    save();
+
+    cardMessage.innerHTML =
+        "結果：" +
+        operator +
+        formatWater(multiplier) +
+        "<br>" +
+        "獲得：" +
+        formatWater(reward) +
+        "<br>" +
+        "手数料：" +
+        formatWater(betValue);
+
+    if(
+        before < CLEAR_WATER &&
+        water >= CLEAR_WATER
+    ){
+
+        showClearCelebration();
+
+    }
+
+    if(
+        before < TEN_TRILLION &&
+        water >= TEN_TRILLION
+    ){
+
+        showTenTrillionCelebration();
+
+    }
+
+    checkMilestones(before);
+
+    checkDisplayWarning(before);
+
+    calculateRank();
+
+    cardActive = false;
+
+    cardStart.disabled = true;
+
+    setTimeout(
+        ()=>{
+            resetCardRound();
+        },
+        1200
+    );
+
+}
+
+
+/* カードイベント */
+
+cardStart.addEventListener(
+    "click",
+    function(e){
+
+        e.preventDefault();
+        e.stopPropagation();
+
+        startCardGame();
+
+    }
+);
+
+
+card1.addEventListener(
+    "click",
+    function(e){
+
+        e.preventDefault();
+        e.stopPropagation();
+
+        flipCard(1);
+
+    }
+);
+
+
+card2.addEventListener(
+    "click",
+    function(e){
+
+        e.preventDefault();
+        e.stopPropagation();
+
+        flipCard(2);
+
+    }
+);
+
+
+/* =========================================
+   キーボード
+========================================= */
+
+let keyboardTarget = "roulette";
+
+
+function updateKeyboardDisplay(){
+
+    const answeringQuiz =
+        keyboardTarget === "quizAnswer" &&
+        quizTimerId !== null;
+
+    if(quizKeyboardQuestion){
+        quizKeyboardQuestion.style.display =
+            answeringQuiz ? "block" : "none";
+        quizKeyboardQuestion.textContent =
+            answeringQuiz
+            ? (quizQuestionA + " × " + quizQuestionB + " = ?")
+            : "? × ? = ?";
+    }
+
+    let value = "";
+
+    if(
+        keyboardTarget === "cardBet"
+    ){
+
+        value =
+            cardBet.value;
+
+    }else if(
+        keyboardTarget === "cardMultiplier"
+    ){
+
+        value =
+            cardMultiplier.value;
+
+    }else if(
+        keyboardTarget === "slotBet"
+    ){
+
+        value =
+            slotBet.value;
+
+    }else if(
+        keyboardTarget === "quizAnswer"
+    ){
+
+        value =
+            quizAnswer.value;
+
+    }else{
+
+        value =
+            bet.value;
+
+    }
+
+    if(!value){
+
+        keyboardDisplay.textContent =
+            (keyboardTarget === "cardMultiplier" || keyboardTarget === "quizAnswer")
+            ? "0"
+            : "0ml";
+
+        return;
+
+    }
+
+    try{
+
+        keyboardDisplay.textContent =
+            (keyboardTarget === "cardMultiplier" || keyboardTarget === "quizAnswer")
+            ? BigInt(value).toString()
+            : formatWater(BigInt(value));
+
+    }catch{
+
+        keyboardDisplay.textContent =
+            value;
+
+    }
+
+}
+
+
+function updateKeyboardMode(){
+    const answeringQuiz =
+        keyboardTarget === "quizAnswer" &&
+        quizTimerId !== null;
+
+    allBet.style.display = answeringQuiz ? "none" : "";
+    keyboardEnter.textContent = answeringQuiz ? "答え合わせ" : "決定";
+}
+
+function openKeyboard(target){
+
+    if(
+        !gambleScreen.classList.contains(
+            "hidden"
+        ) &&
+        target === undefined
+    ){
+
+        keyboardTarget =
+            "roulette";
+
+    }else if(target){
+
+        keyboardTarget =
+            target;
+
+    }
+
+    if(spinning)
+        return;
+
+    customKeyboard.style.display =
+        "block";
+
+    updateKeyboardMode();
+    updateKeyboardDisplay();
+
+    if(keyboardTarget === "quizAnswer"){
+        requestAnimationFrame(()=>{
+            quizAnswer.scrollIntoView({behavior:"smooth", block:"center"});
+        });
+    }
+
+}
+
+
+function closeKeyboard(){
+
+    customKeyboard.style.display =
+        "none";
+    updateKeyboardMode();
+
+}
+
+
+function getKeyboardInput(){
+
+    if(
+        keyboardTarget === "cardBet"
+    )
+        return cardBet;
+
+    if(
+        keyboardTarget ===
+        "cardMultiplier"
+    )
+        return cardMultiplier;
+
+    if(
+        keyboardTarget === "slotBet"
+    )
+        return slotBet;
+
+    if(
+        keyboardTarget === "quizAnswer"
+    )
+        return quizAnswer;
+
+    return bet;
+
+}
+
+
+[
+    bet,
+    cardBet,
+    cardMultiplier,
+    slotBet,
+    quizAnswer
+].forEach(
+    input=>{
+
+        input.addEventListener(
+            "pointerdown",
+            function(e){
+
+                e.preventDefault();
+                e.stopPropagation();
+
+                if(spinning)
+                    return;
+
+                if(input === bet)
+                    keyboardTarget = "roulette";
+
+                if(input === cardBet)
+                    keyboardTarget = "cardBet";
+
+                if(input === cardMultiplier)
+                    keyboardTarget = "cardMultiplier";
+
+                if(input === slotBet)
+                    keyboardTarget = "slotBet";
+
+                if(input === quizAnswer){
+                    if(quizTimerId === null)
+                        return;
+                    keyboardTarget = "quizAnswer";
+                }
+
+                openKeyboard(
+                    keyboardTarget
+                );
+
+            },
+            {
+                passive:false
+            }
+        );
+
+    }
+);
+
+
+/* 数字 */
+
+document
+.querySelectorAll(
+    ".key[data-num]"
+)
+.forEach(
+    button=>{
+
+        button.addEventListener(
+            "pointerdown",
+            function(e){
+
+                e.preventDefault();
+                e.stopPropagation();
+
+            },
+            {
+                passive:false
+            }
+        );
+
+        button.addEventListener(
+            "click",
+            function(e){
+
+                e.preventDefault();
+                e.stopPropagation();
+
+                if(spinning)
+                    return;
+
+                const input =
+                    getKeyboardInput();
+
+                const num =
+                    button.dataset.num;
+
+                if(
+                    input.value ===
+                    "0"
+                ){
+
+                    input.value =
+                        num;
+
+                }else{
+
+                    input.value +=
+                        num;
+
+                }
+
+                updateKeyboardDisplay();
+
+                if(
+                    input === cardBet
+                ){
+
+                    updateCardFee();
+
+                }
+
+            }
+        );
+
+    }
+);
+
+
+/* C */
+
+document
+.getElementById("clearBet")
+.addEventListener(
+    "click",
+    function(e){
+
+        e.preventDefault();
+        e.stopPropagation();
+
+        if(spinning)
+            return;
+
+        const input =
+            getKeyboardInput();
+
+        input.value =
+            "";
+
+        updateKeyboardDisplay();
+
+        if(
+            input === cardBet
+        ){
+
+            updateCardFee();
+
+        }
+
+    }
+);
+
+
+/* ← */
+
+document
+.getElementById("backspaceBet")
+.addEventListener(
+    "click",
+    function(e){
+
+        e.preventDefault();
+        e.stopPropagation();
+
+        if(spinning)
+            return;
+
+        const input =
+            getKeyboardInput();
+
+        input.value =
+            input.value.slice(
+                0,
+                -1
+            );
+
+        updateKeyboardDisplay();
+
+        if(
+            input === cardBet
+        ){
+
+            updateCardFee();
+
+        }
+
+    }
+);
+
+
+/* 最大 */
+
+document
+.getElementById("allBet")
+.addEventListener(
+    "click",
+    function(e){
+
+        e.preventDefault();
+        e.stopPropagation();
+
+        if(spinning)
+            return;
+
+        const input =
+            getKeyboardInput();
+
+        /*
+            カード倍率だけは
+            「最大」＝1億倍
+        */
+
+        if(
+            input === cardMultiplier
+        ){
+
+            input.value =
+                cardMaxMultiplier.toString();
+
+        }else if(
+            input === quizAnswer
+        ){
+
+            /* クイズ解答中は「最大」自体を非表示 */
+            return;
+
+        }else if(
+            input === cardBet
+        ){
+
+            /* カードだけは手数料があるため50%が最大 */
+            input.value =
+                (water / 2n).toString();
+
+        }else{
+
+            /* ルーレット・クイズの掛け金は手数料なしなので全額 */
+            input.value =
+                water.toString();
+
+        }
+
+        updateKeyboardDisplay();
+
+        if(
+            input === cardBet
+        ){
+
+            updateCardFee();
+
+        }
+
+    }
+);
+
+
+/* 決定 */
+
+document
+.getElementById("keyboardEnter")
+.addEventListener(
+    "click",
+    function(e){
+
+        e.preventDefault();
+        e.stopPropagation();
+
+        if(spinning)
+            return;
+
+        const input =
+            getKeyboardInput();
+
+        closeKeyboard();
+
+        if(
+            !/^\d+$/.test(
+                input.value.trim()
+            )
+        ){
+
+            return;
+
+        }
+
+        if(
+            input === cardMultiplier
+        ){
+
+            const multiplier =
+                validateCardMultiplier();
+
+            if(multiplier === null){
+
+                cardMessage.textContent =
+                    "倍率は10倍～" + cardMaxMultiplier.toString() + "倍で指定してください。";
+
+                openKeyboard(
+                    "cardMultiplier"
+                );
+
+            }else{
+
+                cardMessage.textContent =
+                    "倍率：" +
+                    multiplier.toString() +
+                    "倍";
+
+            }
+
+        }else{
+
+            if(input === bet){
+
+                result.textContent =
+                    "入力：" +
+                    formatWater(
+                        BigInt(input.value)
+                    );
+
+            }else if(input === slotBet){
+
+                slotResult.textContent =
+                    "入力：" +
+                    formatWater(
+                        BigInt(input.value)
+                    );
+
+            }else if(input === quizAnswer){
+
+                if(quizTimerId !== null){
+                    const answer = Number(input.value);
+                    if(!Number.isInteger(answer)){
+                        slotResult.textContent = "答えを入力してください。";
+                        openKeyboard("quizAnswer");
+                        return;
+                    }
+                    if(performance.now() > quizDeadline){
+                        clearQuizTimer();
+                        finishQuiz(false, true);
+                    }else{
+                        finishQuiz(answer === quizAnswerValue, false);
+                    }
+                }
+
+            }else{
+
+                updateCardFee();
+
+                cardMessage.textContent =
+                    "入力：" +
+                    formatWater(
+                        BigInt(input.value)
+                    );
+
+            }
+
+        }
+
+    }
+);
+
+
+/* START */
+
+spinButton.addEventListener(
+    "click",
+    function(e){
+
+        e.preventDefault();
+        e.stopPropagation();
+
+        spin();
+
+    }
+);
+
+
+customKeyboard.addEventListener(
+    "pointerdown",
+    function(e){
+
+        e.stopPropagation();
+
+    },
+    {
+        passive:false
+    }
+);
+
+
+/* =========================================
+   DEBUG MODE
+========================================= */
+
+let debugPressTimer = null;
+let debugTriggered = false;
+let suppressResetClick = false;
+
+function openDebugMode(){
+
+    debugTriggered = true;
+    window.__waterClickerLongPress = true;
+    suppressResetClick = true;
+
+    debugWater.value =
+        water.toString();
+
+    debugClickAmount.value =
+        power.toString();
+    debugCardCooldown.value =
+        cardCooldownSeconds.toString();
+    debugRouletteUses.value =
+        rouletteCooldownUses.toString();
+    debugRouletteCooldown.value =
+        rouletteCooldownSeconds.toString();
+    debugJackpot.value =
+        jackpotMultiplier.toString();
+    debugQuizMultiplier.value =
+        quizRewardMultiplier.toString();
+    debugQuizTime.value =
+        quizTimeSeconds.toString();
+    debugQuizCooldown.value =
+        quizCooldownSeconds.toString();
+    debugCardMax.value =
+        cardMaxMultiplier.toString();
+
+    debugCustomName.value = "";
+    debugCustomGain.value = "";
+    debugCustomCost.value = "";
+    updateDebugCustomList();
+
+    debugOverlay.classList.add("show");
+}
+
+function updateDebugCustomList(){
+    if(!debugCustomList) return;
+    if(customShopItems.length === 0){
+        debugCustomList.textContent = "カスタム商品はまだありません。";
+        return;
+    }
+    debugCustomList.innerHTML = "";
+    customShopItems.forEach((item,index)=>{
+        const row = document.createElement("div");
+        row.className = "debug-custom-item";
+        row.textContent = (index + 1) + ". " + item.name +
+            " ／ 1クリック：" + formatWater(toBigIntSafe(item.gain)) +
+            " ／ 値段：" + formatWater(toBigIntSafe(item.cost));
+        debugCustomList.appendChild(row);
+    });
+}
+
+debugCustomAdd.addEventListener("click", function(e){
+    e.preventDefault();
+    e.stopPropagation();
+
+    const name = debugCustomName.value.trim();
+    const gainText = debugCustomGain.value.trim();
+    const costText = debugCustomCost.value.trim();
+
+    if(!name || !/^\d+$/.test(gainText) || !/^\d+$/.test(costText)){
+        alert("商品名・1クリック量・値段を正しく入力してください。");
+        return;
+    }
+
+    const gain = toBigIntSafe(gainText);
+    const cost = toBigIntSafe(costText);
+
+    if(gain < 1n || cost < 1n){
+        alert("1クリック量と値段は1以上で入力してください。");
+        return;
+    }
+
+    if(gain > MAX_WATER || cost > MAX_WATER){
+        alert("1クリック量と値段が大きすぎます。");
+        return;
+    }
+
+    debugUsed = true;
+    customShopItems.push({name, gain, cost});
+    rebuildCustomShopItems();
+    buildShop();
+    updateDebugCustomList();
+    debugCustomName.value = "";
+    debugCustomGain.value = "";
+    debugCustomCost.value = "";
+    save();
+});
+
+
+function cancelDebugPress(){
+
+    if(debugPressTimer !== null){
+        clearTimeout(debugPressTimer);
+        debugPressTimer = null;
+    }
+}
+
+
+function startDebugPress(e){
+
+    // 長押し開始。通常タップのclickは潰さない。
+    debugTriggered = false;
+    cancelDebugPress();
+
+    debugPressTimer =
+        setTimeout(
+            openDebugMode,
+            3000
+        );
+}
+
+// 短押し＝データリセット、3秒長押し＝デバッグモード。
+resetButton.addEventListener(
+    "pointerdown",
+    startDebugPress,
+    {passive:true}
+);
+
+resetButton.addEventListener(
+    "pointerup",
+    function(){
+        if(!debugTriggered)
+            cancelDebugPress();
+    },
+    {passive:true}
+);
+
+resetButton.addEventListener(
+    "pointercancel",
+    function(){
+        if(!debugTriggered)
+            cancelDebugPress();
+    },
+    {passive:true}
+);
+
+resetButton.addEventListener(
+    "click",
+    function(e){
+
+        e.preventDefault();
+        e.stopPropagation();
+
+        // 長押しでデバッグを開いた直後のclickはリセットしない。
+        if(debugTriggered || suppressResetClick){
+            debugTriggered = false;
+            suppressResetClick = false;
+            window.__waterClickerLongPress = false;
+            return;
+        }
+
+        resetGame();
+
+    }
+);
+
+
+
+debugApply.addEventListener(
+    "click",
+    function(e){
+
+        e.preventDefault();
+        e.stopPropagation();
+
+        const w = debugWater.value.trim();
+        const c = debugClickAmount.value.trim();
+        const cd = debugCardCooldown.value.trim();
+        const ru = debugRouletteUses.value.trim();
+        const rcd = debugRouletteCooldown.value.trim();
+        const j = debugJackpot.value.trim();
+        const qm = debugQuizMultiplier.value.trim();
+        const qt = debugQuizTime.value.trim();
+        const qcd = debugQuizCooldown.value.trim();
+        const m = debugCardMax.value.trim();
+
+        if(!/^\d+$/.test(w) || !/^\d+$/.test(c) ||
+           !/^\d+(?:\.\d+)?$/.test(cd) || !/^\d+$/.test(ru) ||
+           !/^\d+(?:\.\d+)?$/.test(rcd) || !/^\d+$/.test(j) ||
+           !/^\d+$/.test(qm) || !/^\d+(?:\.\d+)?$/.test(qt) ||
+           !/^\d+(?:\.\d+)?$/.test(qcd) || !/^\d+$/.test(m)){
+            alert("数値を正しく入力してください。");
+            return;
+        }
+
+        const newWater = toBigIntSafe(w);
+        const newClick = toBigIntSafe(c);
+        const newJackpot = Number(j);
+        const newQuizMultiplier = Number(qm);
+        const newCooldown = Number(cd);
+        const newRouletteUses = Number(ru);
+        const newRouletteCooldown = Number(rcd);
+        const newQuizTime = Number(qt);
+        const newQuizCooldown = Number(qcd);
+        const newMax = toBigIntSafe(m);
+
+        if(newClick < 1n || newJackpot < 1 || newQuizMultiplier < 1 ||
+           newCooldown < 0 || newRouletteUses < 1 || newRouletteCooldown < 0 ||
+           newQuizTime <= 0 || newQuizCooldown < 0 || newMax < 1n){
+            alert("各設定値を正しく入力してください。");
+            return;
+        }
+
+        debugUsed = true;
+        water = newWater > MAX_WATER ? MAX_WATER : newWater;
+        power = newClick;
+        cardCooldownSeconds = newCooldown;
+        rouletteCooldownUses = Math.max(1, Math.floor(newRouletteUses));
+        rouletteCooldownSeconds = newRouletteCooldown;
+        jackpotMultiplier = newJackpot;
+        quizRewardMultiplier = newQuizMultiplier;
+        quizTimeSeconds = newQuizTime;
+        quizCooldownSeconds = newQuizCooldown;
+        cardMaxMultiplier = newMax;
+        rankSettingOverride = {
+            cooldown:true,
+            jackpot:true,
+            cardMax:true,
+            quiz:true,
+            clickPower:true
+        };
+
+        const jackpotItem = roulette.find(item => item.type === "jackpot");
+        if(jackpotItem) jackpotItem.m = jackpotMultiplier;
+        if(jackpotNotice) jackpotNotice.textContent =
+        "JACKPOT：×" + (jackpotMultiplier * rouletteNumberMultiplier);
+
+        calculateRank();
+        buildWheel();
+        update();
+        save();
+        debugOverlay.classList.remove("show");
+        debugTriggered = false;
+        suppressResetClick = false;
+        window.__waterClickerLongPress = false;
+    }
+);
+
+debugClose.addEventListener(
+    "click",
+    function(e){
+        e.preventDefault();
+        e.stopPropagation();
+        debugOverlay.classList.remove("show");
+        debugTriggered = false;
+        suppressResetClick = false;
+        window.__waterClickerLongPress = false;
+    }
+);
+
+/* =========================================
+   セーブコード
+   1文字につき複数の記号列候補を持つ簡易難読化
+========================================= */
+
+const SAVE_CODE_VERSION = "WC2";
+
+/*
+   Base64文字1文字を、4候補のうち1つの3文字トークンへ変換する。
+   固定長なので読み込み時に安全に分割できる。
+   同じ元データでも生成ごとに候補が変わる。
+*/
+const SAVE_TOKEN_SYMBOLS = [
+    "¥\\*", "&'#", "^₩:", "*%+",
+    "@~=", "!$?", "#<>"
+];
+
+const SAVE_TOKEN_CHARS =
+    "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=";
+
+const SAVE_TOKEN_MAP = {};
+const SAVE_TOKEN_REVERSE = {};
+
+(function buildSaveTokenMap(){
+    for(let i=0;i<SAVE_TOKEN_CHARS.length;i++){
+        const ch = SAVE_TOKEN_CHARS[i];
+        const variants = [];
+
+        for(let v=0;v<4;v++){
+            const a = SAVE_TOKEN_SYMBOLS[(i + v * 2) % SAVE_TOKEN_SYMBOLS.length];
+            const b = SAVE_TOKEN_SYMBOLS[(i * 3 + v + 1) % SAVE_TOKEN_SYMBOLS.length];
+            const c = SAVE_TOKEN_SYMBOLS[(i * 5 + v * 3 + 2) % SAVE_TOKEN_SYMBOLS.length];
+            const token = a[v % a.length] + b[(v + i) % b.length] + c[(v * 2 + i) % c.length];
+            variants.push(token);
+        }
+
+        /* 重複トークンができた場合は後続候補を少し変える。 */
+        const unique = [];
+        variants.forEach((token,v)=>{
+            let t = token;
+            let n = 0;
+            while(unique.includes(t) || SAVE_TOKEN_REVERSE[t]){
+                n++;
+                const extra = SAVE_TOKEN_SYMBOLS[(i + v + n) % SAVE_TOKEN_SYMBOLS.length];
+                t = token.slice(0,2) + extra[n % extra.length];
+            }
+            unique.push(t);
+            SAVE_TOKEN_REVERSE[t] = ch;
+        });
+        SAVE_TOKEN_MAP[ch] = unique;
+    }
+})();
+
+function bytesToBase64(bytes){
+    let binary = "";
+    const chunk = 0x8000;
+    for(let i=0;i<bytes.length;i+=chunk){
+        binary += String.fromCharCode(...bytes.subarray(i,i+chunk));
+    }
+    return btoa(binary);
+}
+
+function base64ToBytes(base64){
+    const binary = atob(base64);
+    const bytes = new Uint8Array(binary.length);
+    for(let i=0;i<binary.length;i++) bytes[i] = binary.charCodeAt(i);
+    return bytes;
+}
+
+function encodeSaveCode(data){
+    const json = JSON.stringify(data);
+    const bytes = new TextEncoder().encode(json);
+    const base64 = bytesToBase64(bytes);
+    let body = "";
+
+    for(const ch of base64){
+        const variants = SAVE_TOKEN_MAP[ch];
+        if(!variants) throw new Error("セーブコード変換エラー");
+        body += variants[Math.floor(Math.random() * variants.length)];
+    }
+
+    return "[#" + SAVE_CODE_VERSION + body + ":]";
+}
+
+function decodeSaveCode(code){
+    const text = String(code || "").trim();
+    const prefix = "[#" + SAVE_CODE_VERSION;
+    if(!text.startsWith(prefix) || !text.endsWith(":]"))
+        throw new Error("セーブコードの形式が正しくありません。");
+
+    const body = text.slice(prefix.length,-2);
+    if(!body || body.length % 3 !== 0)
+        throw new Error("セーブコードが壊れているか、途中で欠けています。");
+
+    let base64 = "";
+    for(let i=0;i<body.length;i+=3){
+        const token = body.slice(i,i+3);
+        const ch = SAVE_TOKEN_REVERSE[token];
+        if(!ch)
+            throw new Error("認識できない記号列があります。");
+        base64 += ch;
+    }
+
+    let data;
+    try{
+        data = JSON.parse(new TextDecoder().decode(base64ToBytes(base64)));
+    }catch(e){
+        throw new Error("セーブデータを復元できませんでした。");
+    }
+
+    if(!data || typeof data !== "object" || data.format !== "WATER_CLICKER_SAVE")
+        throw new Error("このゲームのセーブコードではありません。");
+
+    return data.save;
+}
+
+function createSaveSnapshot(){
+    return {
+        format:"WATER_CLICKER_SAVE",
+        save:{
+            water:water.toString(),
+            power:power.toString(),
+            owned:Array.isArray(owned) ? owned.slice() : [],
+            autoOwned:Array.isArray(autoOwned) ? autoOwned.slice() : [],
+            selectedSkin:String(selectedSkin),
+            maxWater:maxWater.toString(),
+            debugUsed:Boolean(debugUsed),
+            playerId:String(playerId),
+            playerSecret:String(playerSecret),
+            playerName:String(playerName),
+            cleared:Boolean(cleared),
+            tenTrillionReached:Boolean(tenTrillionReached),
+            reached10Kei:Boolean(reached10Kei),
+            reached1000Kei:Boolean(reached1000Kei),
+            reached10Gai:Boolean(reached10Gai),
+            reached1000Gai:Boolean(reached1000Gai),
+            reached10Jo:Boolean(reached10Jo),
+            reached1000Jo:Boolean(reached1000Jo),
+            currentRank:Number(currentRank || 0),
+            reachedMuryo:Boolean(reachedMuryo),
+            displayWarningShown:Boolean(displayWarningShown),
+            cardCooldownUntil:Number(cardCooldownUntil || 0),
+            cardMaxMultiplier:cardMaxMultiplier.toString(),
+            cardVisible:Boolean(cardVisible),
+            cardCooldownSeconds:Number(cardCooldownSeconds),
+            rouletteCooldownUses:Number(rouletteCooldownUses),
+            rouletteCooldownSeconds:Number(rouletteCooldownSeconds),
+            rouletteSpinCount:Number(rouletteSpinCount),
+            rouletteCooldownUntil:Number(rouletteCooldownUntil || 0),
+            jackpotMultiplier:Number(jackpotMultiplier),
+            rouletteNumberMultiplier:Number(rouletteNumberMultiplier),
+            quizRewardMultiplier:Number(quizRewardMultiplier),
+            quizTimeSeconds:Number(quizTimeSeconds),
+            quizCooldownSeconds:Number(quizCooldownSeconds),
+            quizCooldownUntil:Number(quizCooldownUntil || 0),
+            selectedShopIndex:Number(selectedShopIndex),
+            customShopItems:customShopItems.map(item=>({
+                name:String(item.name),
+                gain:toBigIntSafe(item.gain).toString(),
+                cost:toBigIntSafe(item.cost).toString()
+            })),
+            rankSettingOverride:{
+                cooldown:Boolean(rankSettingOverride.cooldown),
+                jackpot:Boolean(rankSettingOverride.jackpot),
+                cardMax:Boolean(rankSettingOverride.cardMax),
+                quiz:Boolean(rankSettingOverride.quiz),
+                clickPower:Boolean(rankSettingOverride.clickPower)
+            }
+        }
+    };
+}
+
+function setSaveCodeStatus(message,ok=false){
+    saveCodeStatus.textContent = message;
+    saveCodeStatus.style.color = ok ? "#087f3f" : "#b3261e";
+}
+
+async function copySaveCode(code){
+    code = String(code || "").trim();
+    if(!code) return false;
+
+    // HTTPS等でClipboard APIが使える場合
+    try{
+        if(navigator.clipboard && typeof navigator.clipboard.writeText === "function"){
+            await navigator.clipboard.writeText(code);
+            return true;
+        }
+    }catch(err){}
+
+    // file:// やClipboard API非対応環境向けの旧方式
+    try{
+        const temp = document.createElement("textarea");
+        temp.value = code;
+        temp.setAttribute("readonly", "");
+        temp.style.position = "fixed";
+        temp.style.left = "-9999px";
+        temp.style.top = "0";
+        temp.style.opacity = "0";
+        document.body.appendChild(temp);
+        temp.focus();
+        temp.select();
+        temp.setSelectionRange(0, temp.value.length);
+        const ok = document.execCommand("copy");
+        document.body.removeChild(temp);
+        if(ok) return true;
+    }catch(err){}
+
+    return false;
+}
+
+saveCodeGenerate.addEventListener("click",async function(e){
+    e.preventDefault();
+    e.stopPropagation();
+
+    try{
+        const code = encodeSaveCode(createSaveSnapshot());
+
+        if(await copySaveCode(code)){
+            setSaveCodeStatus("セーブコードをコピーしました！",true);
+        }else{
+            setSaveCodeStatus("コピーできませんでした。",false);
+        }
+    }catch(err){
+        setSaveCodeStatus("生成に失敗しました。");
+        console.error(err);
+    }
+});
+
+saveCodeLoad.addEventListener("click",function(e){
+    e.preventDefault();
+    e.stopPropagation();
+
+    if(saveCodeText.classList.contains("hidden")){
+        saveCodeText.classList.remove("hidden");
+        saveCodeText.value = "";
+        saveCodeLoad.textContent = "ロードする";
+        setSaveCodeStatus("セーブコードを入力してください。",true);
+
+        let loadButton = document.getElementById("saveCodeLoadConfirm");
+        if(!loadButton){
+            loadButton = document.createElement("button");
+            loadButton.id = "saveCodeLoadConfirm";
+            loadButton.className = "save-code-copy";
+            loadButton.type = "button";
+            loadButton.textContent = "ロードする";
+            saveCodeText.insertAdjacentElement("afterend", loadButton);
+
+            loadButton.addEventListener("click",function(ev){
+                ev.preventDefault();
+                ev.stopPropagation();
+
+                const code = saveCodeText.value.trim();
+                if(!code){
+                    saveCodeText.focus();
+                    setSaveCodeStatus("セーブコードを入力してください。");
+                    return;
+                }
+
+                try{
+                    const imported = decodeSaveCode(code);
+                    const importedJson = JSON.stringify(imported);
+                    localStorage.setItem("waterClicker",importedJson);
+
+                    // beforeunload の自動保存で旧データに戻されないよう、
+                    // 読み込んだデータを現在のゲーム状態にも即時反映する。
+                    if(saveTimer !== null){
+                        clearTimeout(saveTimer);
+                        saveTimer = null;
+                    }
+                    load();
+                    applyRankUnlockSettings();
+                    const loadedJackpotItem = roulette.find(item => item.type === "jackpot");
+                    if(loadedJackpotItem) loadedJackpotItem.m = jackpotMultiplier;
+                    if(jackpotNotice) jackpotNotice.textContent = "JACKPOT：×" + jackpotMultiplier;
+                    update();
+
+                    setSaveCodeStatus("読み込み成功！ページを再読み込みします。",true);
+
+                    setTimeout(function(){
+                        saveCodeText.classList.add("hidden");
+                        loadButton.remove();
+                        saveCodeLoad.textContent = "コードを読み込む";
+                        location.reload();
+                    },350);
+                }catch(err){
+                    setSaveCodeStatus(err.message || "セーブコードを読み込めませんでした。");
+                }
+            });
+        }
+
+        setTimeout(function(){
+            saveCodeText.focus();
+        },50);
+        return;
+    }
+});
+
+/* =========================================
+   DEBUG DATA RESET
+   デバッグモード内の「データリセット」
+========================================= */
+
+debugReset.onclick = function(e){
+    e.preventDefault();
+    e.stopPropagation();
+
+    if(!confirm("本当にすべてのデータをリセットしますか？"))
+        return;
+
+    // 保存データを削除してページを再読み込み。
+    // 複雑なゲーム状態に依存せず、確実に初期状態へ戻す。
+    localStorage.removeItem("waterClicker");
+    location.reload();
+};
+
+/* =========================================
+   リセット
+========================================= */
+
+function resetGame(){
+
+    const ok =
+        confirm(
+            "本当にすべてのデータをリセットしますか？"
+        );
+
+    if(!ok)
+        return;
+
+    // リセット時にデバッグ長押し状態も完全に解除。
+    cancelDebugPress();
+    debugTriggered = false;
+    suppressResetClick = false;
+    window.__waterClickerLongPress = false;
+
+    water = 0n;
+
+    power = 1n;
+    selectedShopIndex = -1;
+
+    owned = [];
+
+    cleared = false;
+
+    tenTrillionReached = false;
+
+    reached10Kei = false;
+    reached1000Kei = false;
+    reached10Gai = false;
+    reached1000Gai = false;
+    reached10Jo = false;
+    reached1000Jo = false;
+
+    currentRank = 0;
+
+    reachedMuryo = false;
+
+    displayWarningShown = false;
+
+    cardCooldownUntil = 0;
+    cardCooldownSeconds = 60;
+    rouletteSpinCount = 0;
+    rouletteCooldownUntil = 0;
+    rouletteCooldownUses = 5;
+    rouletteCooldownSeconds = 30;
+    jackpotMultiplier = 1000;
+    quizRewardMultiplier = 100;
+    quizTimeSeconds = 5;
+    quizCooldownSeconds = 20;
+    quizCooldownUntil = 0;
+    const resetJackpotItem = roulette.find(item => item.type === "jackpot");
+    if(resetJackpotItem) resetJackpotItem.m = jackpotMultiplier;
+    rouletteNumberMultiplier = 1;
+    cardMaxMultiplier = 10000n;
+    rankSettingOverride = { cooldown:false, jackpot:false, cardMax:false, quiz:false, clickPower:false };
+    cardVisible = false;
+    slotBetValue = 0n;
+    slotSpinning = false;
+    clearQuizTimer();
+    if(quizCooldownTimer !== null){ clearInterval(quizCooldownTimer); quizCooldownTimer = null; }
+    if(rouletteCooldownTimer !== null){ clearInterval(rouletteCooldownTimer); rouletteCooldownTimer = null; }
+    quizAnswer.value = "";
+    quizAnswer.disabled = false;
+    quizQuestion.textContent = "? × ? = ?";
+    quizTimer.textContent = "制限時間：" + Number(quizTimeSeconds).toFixed(1) + "秒";
+    slotSpinButton.textContent = "問題を出す";
+
+    if(
+        cardCooldownTimer !== null
+    ){
+
+        clearInterval(
+            cardCooldownTimer
+        );
+
+        cardCooldownTimer = null;
+
+    }
+
+    bet.value =
+        "";
+
+    cardBet.value =
+        "";
+
+    cardMultiplier.value =
+        "";
+
+    slotBet.value =
+        "";
+
+    resetCardRound();
+
+    wheelRotation =
+        0;
+
+    wheel.style.transform =
+        "rotate(0deg)";
+
+    spinning =
+        false;
+
+    spinButton.disabled =
+        false;
+
+    bet.disabled =
+        false;
+
+    closeKeyboard();
+
+    warningOverlay.classList.remove(
+        "show"
+    );
+
+    jackpotOverlay.classList.remove(
+        "show"
+    );
+
+    clearOverlay.classList.remove(
+        "show"
+    );
+
+    tenTrillionOverlay.classList.remove(
+        "show"
+    );
+
+    rankUpOverlay.classList.remove(
+        "show"
+    );
+
+    muryoOverlay.classList.remove(
+        "show"
+    );
+
+    // デバッグモードからリセットした場合も、
+    // リセット完了後はデバッグ画面を閉じる。
+    debugOverlay.classList.remove(
+        "show"
+    );
+
+    result.textContent =
+        "水を賭けてGAMBLINGを回そう！";
+
+    slotResult.textContent =
+        "水を賭けてSLOTを回そう！";
+
+    cardMessage.textContent =
+        "倍率を指定して、カードを2枚置こう！";
+
+    // カスタムSHOP商品もリセット対象。
+    customShopItems = [];
+    rebuildCustomShopItems();
+    owned = [];
+    autoOwned = [];
+    autoRate = 0n;
+    autoRemainder = 0n;
+    selectedSkin = "normal";
+    maxWater = 0n;
+    debugUsed = false;
+    applySkin();
+    buildSkinScreen();
+    selectedShopIndex = -1;
+    updateDebugCustomList();
+
+    // ランク関連の設定も初期状態へ戻す。
+    applyRankUnlockSettings();
+    updateRouletteJackpotFromRank();
+    buildWheel();
+    update();
+    buildShop();
+    buildRankList();
+    // リセット後の状態を即時に保存。
+    flushSave();
+    showScreen("home");
+
+}
+
+
+/* =========================================
+   リセット
+========================================= */
+
+document
+.getElementById("rankBackButton")
+.addEventListener(
+    "click",
+    function(e){
+        e.preventDefault();
+        e.stopPropagation();
+        showScreen("home");
+    }
+);
+
+
+document
+.getElementById("warningResetButton")
+.addEventListener(
+    "click",
+    function(e){
+
+        e.preventDefault();
+        e.stopPropagation();
+
+        resetGame();
+
+    }
+);
+
+
+/* =========================================
+   オーバーレイ
+========================================= */
+
+document
+.getElementById("jackpotClose")
+.addEventListener(
+    "click",
+    function(e){
+
+        e.preventDefault();
+        e.stopPropagation();
+
+        jackpotOverlay.classList.remove(
+            "show"
+        );
+
+    }
+);
+
+
+document
+.getElementById("clearClose")
+.addEventListener(
+    "click",
+    function(e){
+
+        e.preventDefault();
+        e.stopPropagation();
+
+        clearOverlay.classList.remove(
+            "show"
+        );
+
+    }
+);
+
+
+document
+.getElementById("tenTrillionClose")
+.addEventListener(
+    "click",
+    function(e){
+
+        e.preventDefault();
+        e.stopPropagation();
+
+        tenTrillionOverlay.classList.remove(
+            "show"
+        );
+
+    }
+);
+
+
+document
+.getElementById("rankUpClose")
+.addEventListener(
+    "click",
+    function(e){
+
+        e.preventDefault();
+        e.stopPropagation();
+
+        rankUpOverlay.classList.remove(
+            "show"
+        );
+
+    }
+);
+
+
+document
+.getElementById("muryoClose")
+.addEventListener(
+    "click",
+    function(e){
+
+        e.preventDefault();
+        e.stopPropagation();
+
+        muryoOverlay.classList.remove(
+            "show"
+        );
+
+    }
+);
+
+
+[
+    warningOverlay,
+    jackpotOverlay,
+    clearOverlay,
+    tenTrillionOverlay,
+    rankUpOverlay,
+    muryoOverlay,
+    debugOverlay
+].forEach(
+    overlay=>{
+
+        overlay.addEventListener(
+            "pointerdown",
+            function(e){
+
+                e.stopPropagation();
+
+            },
+            {
+                passive:true
+            }
+        );
+
+    }
+);
+
+
+/* =========================================
+   ホーム3回タップ
+========================================= */
+
+let tapCount = 0;
+
+let tapTimer = null;
+
+
+function requestFullscreen(){
+
+    const element =
+        document.documentElement;
+
+    if(
+        document.fullscreenElement
+    )
+        return;
+
+    if(
+        element.requestFullscreen
+    ){
+
+        element
+        .requestFullscreen()
+        .catch(()=>{});
+
+    }else if(
+        element.webkitRequestFullscreen
+    ){
+
+        element.webkitRequestFullscreen();
+
+    }
+
+}
+
+
+home.addEventListener(
+    "pointerup",
+    function(e){
+
+        if(
+            e.target.closest("button") ||
+            e.target.closest("input")
+        )
+            return;
+
+        tapCount++;
+
+        clearTimeout(
+            tapTimer
+        );
+
+        tapTimer =
+            setTimeout(
+                ()=>{
+                    tapCount = 0;
+                },
+                650
+            );
+
+        if(
+            tapCount >= 3
+        ){
+
+            tapCount = 0;
+
+            clearTimeout(
+                tapTimer
+            );
+
+            requestFullscreen();
+
+        }
+
+    },
+    {
+        passive:true
+    }
+);
+
+
+/* =========================================
+   起動
+========================================= */
+
+load();
+applyRankUnlockSettings();
+const initialJackpotItem = roulette.find(item => item.type === "jackpot");
+if(initialJackpotItem) initialJackpotItem.m = jackpotMultiplier;
+if(jackpotNotice) jackpotNotice.textContent = "JACKPOT：×" + jackpotMultiplier;
+updateKeyboardMode();
+
+cardArea.classList.add("hidden-card");
+cardStart.style.display = "";
+
+buildWheel();
+
+buildShop();
+
+applySkin();
+buildSkinScreen();
+
+buildRankList();
+
+update();
+updateRouletteCooldown();
+updateQuizCooldown();
+showScreen("home");
+
+
+
+window.addEventListener("beforeunload",flushSave);
+</script>
+
+</body>
+</html>
